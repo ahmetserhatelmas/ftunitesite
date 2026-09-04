@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Player, Match, CommentTag } from '../types';
 import { AVAILABLE_TAGS } from '../data/tags';
+import { compareNewest } from '../lib/matchTime';
 import { ReviewRepliesSection } from './ReviewRepliesSection';
 
 export const PersonalReviewsView: React.FC = () => {
@@ -203,7 +204,7 @@ export const PersonalReviewsView: React.FC = () => {
         if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1);
         if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99);
         if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0);
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return compareNewest(a, b);
       });
   }, [enrichedMyReviews, filterTeam, searchQuery, sortBy]);
 

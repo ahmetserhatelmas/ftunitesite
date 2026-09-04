@@ -29,6 +29,7 @@ import { FootballJersey } from './FootballJersey';
 import { ReviewRepliesSection } from './ReviewRepliesSection';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
+import { compareNewest } from '../lib/matchTime';
 
 export const PlayerReviewDrawer: React.FC = () => {
   const {
@@ -118,10 +119,7 @@ export const PlayerReviewDrawer: React.FC = () => {
   // Submit review
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requireAuth(() => doSubmitReview())) {
-      return;
-    }
-    doSubmitReview();
+    requireAuth(() => doSubmitReview());
   };
 
   const doSubmitReview = () => {
@@ -153,10 +151,7 @@ export const PlayerReviewDrawer: React.FC = () => {
 
   // Handle MOTM vote
   const handleMotmVote = () => {
-    if (!requireAuth(() => doMotmVote())) {
-      return;
-    }
-    doMotmVote();
+    requireAuth(() => doMotmVote());
   };
 
   const doMotmVote = () => {
@@ -176,12 +171,12 @@ export const PlayerReviewDrawer: React.FC = () => {
       const aFollowed = isFollowingUser(a.authorName) ? 1 : 0;
       const bFollowed = isFollowingUser(b.authorName) ? 1 : 0;
       if (bFollowed !== aFollowed) return bFollowed - aFollowed;
-      return b.likes - a.likes;
+      return (b.likes || 0) - (a.likes || 0) || compareNewest(a, b);
     }
-    if (sortBy === 'likes') return b.likes - a.likes;
-    if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1);
-    if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99);
-    return b.id.localeCompare(a.id); // newest
+    if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0) || compareNewest(a, b);
+    if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1) || compareNewest(a, b);
+    if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99) || compareNewest(a, b);
+    return compareNewest(a, b);
   });
 
   return (

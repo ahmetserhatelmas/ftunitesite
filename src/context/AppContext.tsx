@@ -18,6 +18,7 @@ import {
 } from '../lib/auth';
 import { loadWebReviews, saveWebReview } from '../lib/webReviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
+import { deriveActiveWeek, hasKickoffStarted, isMatchLive, matchHasStarted, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -104,7 +105,7 @@ interface AppContextType {
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   registerUser: (data: { nickname: string; email: string; password: string; favoriteTeamId?: string; avatar?: string }) => Promise<{ ok: boolean; error?: string; needsEmailConfirm?: boolean }>;
   loginUser: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsFavoriteClub?: boolean; needsEmailConfirm?: boolean }>;
-  sendSignupCode: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  sendSignupCode: (email: string) => Promise<{ ok: boolean; error?: string; alreadyRegistered?: boolean }>;
   finishSignupWithCode: (data: { email: string; token: string; nickname: string; password: string; favoriteTeamId: string; avatar: string }) => Promise<{ ok: boolean; error?: string; needsFavoriteClub?: boolean }>;
   sendResetCode: (email: string) => Promise<{ ok: boolean; error?: string }>;
   finishResetWithCode: (data: { email: string; token: string; password: string }) => Promise<{ ok: boolean; error?: string; needsFavoriteClub?: boolean }>;
@@ -208,17 +209,23 @@ const DEFAULT_GUEST_PROFILE: UserProfile = {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [leagues, setLeagues] = useState<League[]>(LEAGUES);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('super-lig');
-  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [selectedWeek, setSelectedWeekState] = useState<number>(1);
+  const userPickedWeek = useRef(false);
+  const setSelectedWeek = (week: number) => {
+    userPickedWeek.current = true;
+    setSelectedWeekState(week);
+  };
   const [standings, setStandings] = useState<StandingTeam[]>([]);
   const [standingsMeta, setStandingsMeta] = useState({ seasonLabel: '2026/27', week: 1, updatedAt: '' });
   const hydratedWeeks = useRef<Set<number>>(new Set());
+  const lastReviewSubmit = useRef<{ key: string; at: number } | null>(null);
 
   const currentLeague = leagues.find((l) => l.id === selectedLeagueId) || leagues[0];
   const currentWeek = currentLeague?.currentWeek || 1;
   const isPastWeek = (weekNumber: number) => weekNumber < currentWeek;
   const canWriteMatchReview = (match?: Match | null) => {
     if (!match) return false;
-    return match.status === 'FT' || match.status === 'LIVE';
+    return matchHasStarted(match);
   };
   const matchWriteLock = (match?: Match | null): 'none' | 'unplayed' => {
     return canWriteMatchReview(match) ? 'none' : 'unplayed';
@@ -229,6 +236,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const [matches, setMatches] = useState<Match[]>([]);
+  const matchesRef = useRef<Match[]>([]);
+  matchesRef.current = matches;
 
   const [reviews, setReviews] = useState<PlayerReview[]>(() => {
     try {
@@ -501,18 +510,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [userProfile]);
 
   const applyLivePayload = (data: any, fallbackToMock = false) => {
+    let started: Match[] | undefined;
     if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
-      setMatches(data.matches);
-      for (const match of data.matches as Match[]) {
+      started = (data.matches as Match[]).map((match) => {
+        if (match.status !== 'FT' && isMatchLive(match)) {
+          return { ...match, status: 'LIVE' as const, minute: match.minute || 1 };
+        }
+        return match;
+      });
+      setMatches(started);
+      for (const match of started) {
         if (match.homePlayers?.length || match.awayPlayers?.length) {
           hydratedWeeks.current.add(match.week);
         }
       }
-      const playable = data.matches.filter((m: Match) => m.status === 'FT' || m.status === 'LIVE');
-      const nextWeek = playable.length
-        ? Math.max(...playable.map((m: Match) => m.week))
-        : data.league?.currentWeek || selectedWeek;
-      setSelectedWeek((prev) => (prev <= 1 ? nextWeek : prev));
+      const homeWeek = deriveActiveWeek(started, data.league?.currentWeek || 1);
+      if (!userPickedWeek.current) {
+        setSelectedWeekState(homeWeek);
+      }
     } else if (fallbackToMock) {
       setMatches(INITIAL_MATCHES);
     }
@@ -521,10 +536,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setStandings(data.standings);
     }
     if (data.league) {
-      setLeagues([data.league]);
+      const leagueWeek = deriveActiveWeek(
+        started || (Array.isArray(data.matches) ? data.matches : []),
+        data.league.currentWeek || 1,
+      );
+      setLeagues([{ ...data.league, currentWeek: leagueWeek }]);
       setStandingsMeta({
         seasonLabel: String(data.league.name || '').match(/\(([^)]+)\)/)?.[1] || '2026/27',
-        week: data.league.currentWeek || 1,
+        week: leagueWeek,
         updatedAt: data.lastSync || '',
       });
     }
@@ -573,6 +592,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchLiveMatches();
   }, []);
 
+  useEffect(() => {
+    const pullLiveWeek = async () => {
+      const due = matchesRef.current.some(
+        (m) => m.status === 'LIVE' || hasKickoffStarted(m.kickoffAt, -60_000) || hasKickoffStarted(m.date, -60_000),
+      );
+      if (!due) return;
+      try {
+        const res = await fetch('/api/live/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ week: currentWeek }),
+        });
+        if (res.ok) applyLivePayload(await res.json());
+      } catch {
+        // ignore
+      }
+    };
+    const soon = window.setTimeout(() => void pullLiveWeek(), 2500);
+    const id = window.setInterval(() => void pullLiveWeek(), 40_000);
+    return () => {
+      window.clearTimeout(soon);
+      window.clearInterval(id);
+    };
+  }, [currentWeek]);
+
   const syncLiveMatches = async (weekNumber?: number) => {
     setIsLiveSyncing(true);
     try {
@@ -597,6 +641,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMatches((prevMatches) => {
         let hasLive = false;
         const updated = prevMatches.map((m) => {
+          if (m.status !== 'FT' && m.status !== 'LIVE' && isMatchLive(m)) {
+            hasLive = true;
+            return { ...m, status: 'LIVE' as const, minute: m.minute || 1, liveSeconds: m.liveSeconds || 0 };
+          }
           if (m.status === 'LIVE') {
             hasLive = true;
             const currentMin = typeof m.minute === 'number' ? m.minute : (parseInt(String(m.minute || '78'), 10) || 78);
@@ -677,6 +725,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Rakip takıma yalnızca yorum yazılabilir.');
       return;
     }
+
+    const submitKey = `${reviewData.matchId}:${reviewData.playerId}:${comment}:${allowScore ? reviewData.rating ?? '' : ''}`;
+    const nowMs = Date.now();
+    if (lastReviewSubmit.current && lastReviewSubmit.current.key === submitKey && nowMs - lastReviewSubmit.current.at < 2000) {
+      return;
+    }
+    lastReviewSubmit.current = { key: submitKey, at: nowMs };
 
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}, ${now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -1347,20 +1402,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Follower & Level System Logic
   const isFollowingUser = (authorName: string): boolean => {
     if (!authorName) return false;
-    const cleanName = authorName.trim().toLowerCase();
-    return followedCommentators.some((f) => f.name.trim().toLowerCase() === cleanName || f.id === cleanName);
+    const cleanName = normalizePersonName(authorName);
+    return followedCommentators.some(
+      (f) => normalizePersonName(f.name) === cleanName || f.id === cleanName,
+    );
   };
 
   const unfollowUser = (authorName: string) => {
     if (!authorName) return;
-    const cleanName = authorName.trim().toLowerCase();
-    setFollowedCommentators((prev) => prev.filter((f) => f.name.trim().toLowerCase() !== cleanName && f.id !== cleanName));
+    const cleanName = normalizePersonName(authorName);
+    setFollowedCommentators((prev) =>
+      prev.filter((f) => normalizePersonName(f.name) !== cleanName && f.id !== cleanName),
+    );
   };
 
   const toggleFollowUser = (authorName: string, authorData?: { avatar?: string; fanOf?: string; teamId?: string }): boolean => {
     if (!authorName) return false;
-    if (authorName === userProfile.name || authorName === userProfile.nickname) {
-      return false; // Cannot follow yourself
+    const selfName = normalizePersonName(authorName);
+    if (
+      selfName &&
+      (selfName === normalizePersonName(userProfile.name) ||
+        selfName === normalizePersonName(userProfile.nickname))
+    ) {
+      return false;
     }
 
     if (!userProfile.isRegistered) {
@@ -1386,7 +1450,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         followedAt: dateStr,
       };
 
-      setFollowedCommentators((prev) => [newFollow, ...prev.filter((f) => f.name.toLowerCase() !== cleanName.toLowerCase())]);
+      setFollowedCommentators((prev) => [
+        newFollow,
+        ...prev.filter((f) => normalizePersonName(f.name) !== normalizePersonName(cleanName)),
+      ]);
 
       try {
         confetti({

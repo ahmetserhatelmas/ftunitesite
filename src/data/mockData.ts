@@ -7,7 +7,7 @@ export const LEAGUES: League[] = [
     name: 'Trendyol Süper Lig (2025/2026)',
     country: 'Türkiye',
     logo: '🇹🇷',
-    currentWeek: 3,
+    currentWeek: 4,
     totalWeeks: 38,
   },
 ];

@@ -200,17 +200,39 @@ export async function signUpSharedAccount(input: {
   return { ok: true, profile };
 }
 
-export async function sendRegistrationOtp(email: string): Promise<{ ok: boolean; error?: string }> {
+const ALREADY_REGISTERED_MESSAGE = 'Bu e-posta zaten kayıtlı. Giriş yap veya şifremi unuttum kullan.';
+
+export async function emailAlreadyRegistered(email: string): Promise<boolean | null> {
+  const sb = getBrowserSupabase();
+  if (!sb || !isBrowserSupabaseConfigured()) return null;
+  const trimmed = email.trim().toLowerCase();
+  const rpc = await sb.rpc('fu_web_email_is_registered', { p_email: trimmed });
+  if (!rpc.error && typeof rpc.data === 'boolean') return rpc.data;
+  return null;
+}
+
+export async function sendRegistrationOtp(email: string): Promise<{ ok: boolean; error?: string; alreadyRegistered?: boolean }> {
   const sb = getBrowserSupabase();
   if (!sb || !isBrowserSupabaseConfigured()) {
     return { ok: false, error: 'Supabase yapılandırılmadı.' };
   }
   const trimmed = email.trim().toLowerCase();
+  const exists = await emailAlreadyRegistered(trimmed);
+  if (exists === true) {
+    return { ok: false, error: ALREADY_REGISTERED_MESSAGE, alreadyRegistered: true };
+  }
   const { error } = await sb.auth.signInWithOtp({
     email: trimmed,
     options: { shouldCreateUser: true },
   });
-  if (error) return { ok: false, error: friendlyAuthError(error.message) };
+  if (error) {
+    const friendly = friendlyAuthError(error.message);
+    return {
+      ok: false,
+      error: friendly,
+      alreadyRegistered: friendly === ALREADY_REGISTERED_MESSAGE,
+    };
+  }
   return { ok: true };
 }
 

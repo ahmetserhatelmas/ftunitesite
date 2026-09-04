@@ -20,6 +20,7 @@ import { ReviewRepliesSection } from './ReviewRepliesSection';
 import { TeamLogo } from './TeamLogo';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
+import { compareNewest } from '../lib/matchTime';
 
 export const HomeReviewsPanel: React.FC = () => {
   const {
@@ -73,11 +74,11 @@ export const HomeReviewsPanel: React.FC = () => {
     let list = [...enrichedReviews];
 
     if (activeQuickFilter === 'followed') {
-      list = list.filter((r) => isFollowingUser(r.authorName));
+      list = list.filter((r) => isFollowingUser(r.authorName)).sort(compareNewest);
     } else if (activeQuickFilter === 'popular') {
-      list.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      list.sort((a, b) => (b.likes || 0) - (a.likes || 0) || compareNewest(a, b));
     } else if (activeQuickFilter === 'top-rated') {
-      list = list.filter((r) => r.rating >= 9.0).sort((a, b) => b.rating - a.rating);
+      list = list.filter((r) => typeof r.rating === 'number' && r.rating >= 9.0).sort((a, b) => (b.rating || 0) - (a.rating || 0) || compareNewest(a, b));
     } else if (activeQuickFilter === 'gs') {
       list = list.filter(
         (r) =>
@@ -111,8 +112,7 @@ export const HomeReviewsPanel: React.FC = () => {
           r.match?.awayTeam.id === 'ts'
       );
     } else {
-      // Default: newest first
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      list.sort(compareNewest);
     }
 
     return list.slice(0, 6); // Show top 6 on home page with view-all CTA

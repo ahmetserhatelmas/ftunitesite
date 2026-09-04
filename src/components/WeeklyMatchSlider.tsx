@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Match } from '../types';
 import { MessageSquare, MapPin, Award } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
-import { formatMatchKickoff } from '../lib/matchTime';
+import { formatMatchKickoff, isMatchLive } from '../lib/matchTime';
 
 const TR_MONTHS: Record<string, number> = {
   ocak: 0,
@@ -109,7 +109,7 @@ export const WeeklyMatchSlider: React.FC = () => {
         {weekMatches.map((match) => {
           const isSelected = match.id === selectedMatchId;
           const commentCount = getMatchTotalComments(match.id);
-          const isLive = match.status === 'LIVE';
+          const isLive = isMatchLive(match);
           const statusLabel = match.status === 'FT' ? 'BİTTİ' : upcomingStatusLabel(match);
           const liveMin = match.minute ?? 78;
           const liveSec = typeof match.liveSeconds === 'number' ? match.liveSeconds : 0;

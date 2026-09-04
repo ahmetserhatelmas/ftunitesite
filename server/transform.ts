@@ -2,7 +2,7 @@ import { League, Manager, Match, MatchEvent, Player, PlayerStats, PositionCatego
 import { StandingTeam } from '../src/data/superLigStandings';
 import { fallbackPositionLabel, placeStartingXi } from '../src/lib/lineupLayout';
 import { parseRoundWeek, resolveClubStyle } from './teamCatalog';
-import { formatMatchKickoff } from '../src/lib/matchTime';
+import { formatMatchKickoff, hasKickoffStarted } from '../src/lib/matchTime';
 
 const EMPTY_STATS: PlayerStats = {
   minutesPlayed: 0,
@@ -19,10 +19,11 @@ const EMPTY_STATS: PlayerStats = {
   redCard: false,
 };
 
-function mapStatus(short?: string): Match['status'] {
+function mapStatus(short?: string, kickoffIso?: string): Match['status'] {
   const code = (short || '').toUpperCase();
   if (['FT', 'AET', 'PEN'].includes(code)) return 'FT';
-  if (['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'INT'].includes(code)) return 'LIVE';
+  if (['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'INT', 'SUSP'].includes(code)) return 'LIVE';
+  if (hasKickoffStarted(kickoffIso)) return 'LIVE';
   return 'UPCOMING';
 }
 
@@ -223,7 +224,7 @@ export function transformFixture(raw: any): Match {
   const homeTeam = buildTeam(raw.teams?.home, homeLineup);
   const awayTeam = buildTeam(raw.teams?.away, awayLineup);
   const stats = collectStats(raw.players || []);
-  const status = mapStatus(raw.fixture?.status?.short);
+  const status = mapStatus(raw.fixture?.status?.short, raw.fixture?.date);
   const venue = [raw.fixture?.venue?.name, raw.fixture?.venue?.city].filter(Boolean).join(', ');
 
   return {

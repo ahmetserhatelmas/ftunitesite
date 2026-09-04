@@ -26,6 +26,7 @@ import { ReviewRepliesSection } from './ReviewRepliesSection';
 import { TeamLogo } from './TeamLogo';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
+import { compareNewest } from '../lib/matchTime';
 
 export const ManagerReviewDrawer: React.FC = () => {
   const {
@@ -138,17 +139,14 @@ export const ManagerReviewDrawer: React.FC = () => {
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requireAuth(() => doSubmitReview())) {
-      return;
-    }
-    doSubmitReview();
+    requireAuth(() => doSubmitReview());
   };
 
   const sortedReviews = [...managerReviews].sort((a, b) => {
-    if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0);
-    if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1);
-    if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99);
+    if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0) || compareNewest(a, b);
+    if (sortBy === 'newest') return compareNewest(a, b);
+    if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1) || compareNewest(a, b);
+    if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99) || compareNewest(a, b);
     return 0;
   });
 

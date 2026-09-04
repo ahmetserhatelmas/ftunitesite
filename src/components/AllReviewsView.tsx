@@ -32,6 +32,7 @@ import { TeamLogo } from './TeamLogo';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
 import { Player, Match } from '../types';
+import { compareNewest } from '../lib/matchTime';
 
 const SUPER_LIG_TEAMS = [
   { id: 'all', name: 'Tüm Kulüpler', badge: '🇹🇷' },
@@ -196,19 +197,18 @@ export const AllReviewsView: React.FC = () => {
           if (bFollowed !== aFollowed) {
             return bFollowed - aFollowed;
           }
-          return (b.likes || 0) - (a.likes || 0);
+          return (b.likes || 0) - (a.likes || 0) || compareNewest(a, b);
         }
         if (sortBy === 'likes') {
-          return (b.likes || 0) - (a.likes || 0);
+          return (b.likes || 0) - (a.likes || 0) || compareNewest(a, b);
         }
         if (sortBy === 'highest') {
-          return b.rating - a.rating;
+          return (b.rating ?? -1) - (a.rating ?? -1) || compareNewest(a, b);
         }
         if (sortBy === 'lowest') {
-          return a.rating - b.rating;
+          return (a.rating ?? 99) - (b.rating ?? 99) || compareNewest(a, b);
         }
-        // newest default
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return compareNewest(a, b);
       });
   }, [enrichedReviews, onlyFollowedFilter, selectedTeamFilter, selectedWeekFilter, ratingRangeFilter, searchQuery, sortBy, isFollowingUser]);
 

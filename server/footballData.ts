@@ -1,7 +1,7 @@
 import { Match, Team, Player } from '../src/types';
 import { INITIAL_MATCHES } from '../src/data/mockData';
 import { SUPERLIG_CLUBS, getSquadForTeam } from '../src/data/superLigSquads';
-import { formatMatchKickoff } from '../src/lib/matchTime';
+import { formatMatchKickoff, hasKickoffStarted } from '../src/lib/matchTime';
 
 const DEFAULT_API_KEY = 'fd_98b7e370b21f5b242b973d547a0f02b00126895cae178934';
 const BASE_URL = 'https://api.football-data.org/v4';
@@ -127,10 +127,11 @@ export async function fetchFromFootballData(endpoint: string, apiKey?: string): 
 }
 
 // Convert football-data status to our App Match status
-function mapMatchStatus(statusStr: string): 'FT' | 'LIVE' | 'UPCOMING' {
+function mapMatchStatus(statusStr: string, kickoffIso?: string): 'FT' | 'LIVE' | 'UPCOMING' {
   const s = (statusStr || '').toUpperCase();
-  if (s === 'FINISHED') return 'FT';
+  if (s === 'FINISHED' || s === 'AWARDED') return 'FT';
   if (s === 'IN_PLAY' || s === 'PAUSED' || s === 'LIVE') return 'LIVE';
+  if (hasKickoffStarted(kickoffIso)) return 'LIVE';
   return 'UPCOMING';
 }
 
@@ -256,7 +257,7 @@ export function transformFootballDataMatches(
       kickoffAt: am.utcDate,
       stadium: matchedExisting?.stadium || `${homeTeam.name} Stadyumu`,
       referee: refereeName,
-      status: mapMatchStatus(am.status),
+      status: mapMatchStatus(am.status, am.utcDate),
       homeTeam,
       awayTeam,
       homeScore: am.score?.fullTime?.home ?? matchedExisting?.homeScore ?? 0,

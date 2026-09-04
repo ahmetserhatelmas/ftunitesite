@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserPlus, UserCheck, Check, UserMinus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { normalizePersonName } from '../lib/matchTime';
 
 interface FollowButtonProps {
   authorName?: string;
@@ -46,8 +47,9 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
 
   // Don't show follow button for self
   const isSelf =
-    effectiveName.toLowerCase() === userProfile.name?.trim().toLowerCase() ||
-    (userProfile.nickname && effectiveName.toLowerCase() === userProfile.nickname.trim().toLowerCase());
+    normalizePersonName(effectiveName) === normalizePersonName(userProfile.name) ||
+    (!!userProfile.nickname &&
+      normalizePersonName(effectiveName) === normalizePersonName(userProfile.nickname));
 
   if (isSelf) return null;
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutGrid, ListFilter, Users, Shield, Award, Flame, MessageSquare, Lock } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
+import { isMatchLive } from '../lib/matchTime';
 
 export const MatchHero: React.FC = () => {
   const {
@@ -20,7 +21,7 @@ export const MatchHero: React.FC = () => {
 
   const totalReviews = reviews.filter((r) => r.matchId === selectedMatch.id).length;
   const writeLock = matchWriteLock(selectedMatch);
-  const isLive = selectedMatch.status === 'LIVE';
+  const isLive = isMatchLive(selectedMatch);
   const liveMin = selectedMatch.minute ?? 78;
   const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
   const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;

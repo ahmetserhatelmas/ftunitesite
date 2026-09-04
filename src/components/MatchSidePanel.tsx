@@ -7,6 +7,7 @@ import { LeagueStandingsCard } from './LeagueStandingsCard';
 import { TeamLogo } from './TeamLogo';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
+import { isMatchLive } from '../lib/matchTime';
 
 export const MatchSidePanel: React.FC = () => {
   const {
@@ -59,7 +60,7 @@ export const MatchSidePanel: React.FC = () => {
     ? (awayRatings.reduce((a, b) => a + b, 0) / awayRatings.length).toFixed(1)
     : '—';
 
-  const isLive = selectedMatch.status === 'LIVE';
+  const isLive = isMatchLive(selectedMatch);
   const liveMin = selectedMatch.minute ?? 78;
   const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
   const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;

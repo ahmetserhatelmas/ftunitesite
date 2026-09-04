@@ -58,6 +58,7 @@ export const QuickRegisterModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedCommunityRules, setAcceptedCommunityRules] = useState(false);
   const [showRulesDetail, setShowRulesDetail] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   useEffect(() => {
     if (otpResendIn <= 0) return;
@@ -86,6 +87,7 @@ export const QuickRegisterModal: React.FC = () => {
       setSelectedTeamId('');
       setAcceptedCommunityRules(false);
       setShowRulesDetail(false);
+      setAlreadyRegistered(false);
       setMode('login');
     }, 1200);
   };
@@ -98,6 +100,7 @@ export const QuickRegisterModal: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     setInfoMessage('');
+    setAlreadyRegistered(false);
 
     const trimmedNickname = nickname.trim();
     const trimmedEmail = email.trim();
@@ -247,7 +250,8 @@ export const QuickRegisterModal: React.FC = () => {
       const sent = await sendSignupCode(trimmedEmail);
       if (!sent.ok) {
         setErrorMessage(sent.error || 'Onay kodu gönderilemedi.');
-        startOtpCooldown(sent.error);
+        setAlreadyRegistered(Boolean(sent.alreadyRegistered));
+        if (!sent.alreadyRegistered) startOtpCooldown(sent.error);
         return;
       }
       setMode('verify-signup');
@@ -390,9 +394,25 @@ export const QuickRegisterModal: React.FC = () => {
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl p-2.5 flex items-center gap-2 animate-shake">
-                <X className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{errorMessage}</span>
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl p-2.5 flex items-start gap-2 animate-shake">
+                <X className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="min-w-0 space-y-1.5">
+                  <span className="block">{errorMessage}</span>
+                  {alreadyRegistered && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setAlreadyRegistered(false);
+                        setErrorMessage('');
+                        setInfoMessage('Bu e-posta zaten kayıtlı. Giriş yapabilirsin.');
+                      }}
+                      className="text-emerald-800 underline font-black"
+                    >
+                      Giriş ekranına geç
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             {infoMessage && (
