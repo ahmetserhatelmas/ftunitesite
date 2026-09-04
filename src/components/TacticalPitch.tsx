@@ -86,7 +86,7 @@ export const TacticalPitch: React.FC = () => {
           top: `${posY}%`,
         }}
         onClick={() => openPlayerModal(player, selectedMatch.id)}
-        className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10 transition-all duration-300 opacity-100 scale-100 hover:scale-115 hover:z-30"
+        className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10 transition-all duration-300 opacity-100 scale-[0.72] sm:scale-100 hover:scale-90 sm:hover:scale-115 hover:z-30"
       >
         {/* Badges on top of player */}
         <div className="flex items-center gap-1 mb-0.5 relative">
@@ -164,7 +164,7 @@ export const TacticalPitch: React.FC = () => {
 
         {/* Player Name and Position label */}
         <div className="mt-1 px-2 py-0.5 rounded-lg bg-white/95 backdrop-blur-sm border border-emerald-100 text-center shadow-md pointer-events-none group-hover:bg-emerald-50 group-hover:border-emerald-400 transition">
-          <p className="text-[11px] font-black text-slate-900 leading-none whitespace-nowrap truncate max-w-[95px]">
+          <p className="text-[10px] sm:text-[11px] font-black text-slate-900 leading-none whitespace-nowrap truncate max-w-[72px] sm:max-w-[95px]">
             {player.shortName}
           </p>
           <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">
@@ -184,20 +184,21 @@ export const TacticalPitch: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3 px-1">
           
           {/* Team Switcher for the pitch */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner min-w-0 overflow-x-auto no-scrollbar">
             <button
               id="pitch-team-home-btn"
               type="button"
               onClick={() => setTeamTab('home')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
                 teamTab === 'home'
                   ? 'bg-white text-emerald-950 shadow-sm border border-emerald-300'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TeamLogo team={selectedMatch.homeTeam} size="xs" shape="circle" showShadow={false} />
-              <span>{selectedMatch.homeTeam.name}</span>
-              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 rounded-md">
+              <span className="sm:hidden">{selectedMatch.homeTeam.shortName}</span>
+              <span className="hidden sm:inline">{selectedMatch.homeTeam.name}</span>
+              <span className="hidden sm:inline text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 rounded-md">
                 Ev Sahibi
               </span>
             </button>
@@ -206,15 +207,16 @@ export const TacticalPitch: React.FC = () => {
               id="pitch-team-away-btn"
               type="button"
               onClick={() => setTeamTab('away')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
                 teamTab === 'away'
                   ? 'bg-white text-emerald-950 shadow-sm border border-emerald-300'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TeamLogo team={selectedMatch.awayTeam} size="xs" shape="circle" showShadow={false} />
-              <span>{selectedMatch.awayTeam.name}</span>
-              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 rounded-md">
+              <span className="sm:hidden">{selectedMatch.awayTeam.shortName}</span>
+              <span className="hidden sm:inline">{selectedMatch.awayTeam.name}</span>
+              <span className="hidden sm:inline text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 rounded-md">
                 Deplasman
               </span>
             </button>
@@ -226,7 +228,7 @@ export const TacticalPitch: React.FC = () => {
               id="toggle-general-ratings-btn"
               type="button"
               onClick={() => setShowGeneralRatings(!showGeneralRatings)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black transition shadow-sm cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-black transition shadow-sm cursor-pointer whitespace-nowrap ${
                 showGeneralRatings
                   ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 ring-2 ring-amber-300 shadow-md'
                   : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 hover:border-emerald-400'
@@ -244,7 +246,7 @@ export const TacticalPitch: React.FC = () => {
                 <>
                   <BarChart3 className="w-3.5 h-3.5 text-emerald-700" />
                   <span>Genel Puanlamalar</span>
-                  <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded-full ml-0.5">
+                  <span className="hidden sm:inline text-[10px] font-bold bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded-full ml-0.5">
                     Ortalamaları Gör
                   </span>
                 </>
@@ -254,7 +256,7 @@ export const TacticalPitch: React.FC = () => {
         </div>
 
         {/* Football Grass Pitch Arena */}
-        <div className="relative w-full aspect-[16/9] min-h-[380px] sm:min-h-[480px] md:min-h-[540px] rounded-2xl overflow-hidden shadow-inner border-2 border-emerald-600 bg-gradient-to-r from-emerald-600 via-emerald-650 to-emerald-600 select-none">
+        <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[260px] sm:min-h-[480px] md:min-h-[540px] rounded-2xl overflow-hidden shadow-inner border-2 border-emerald-600 bg-gradient-to-r from-emerald-600 via-emerald-650 to-emerald-600 select-none">
           
           {/* Turf Stripes Pattern */}
           <div className="absolute inset-0 grid grid-cols-12 pointer-events-none opacity-25">
@@ -336,8 +338,9 @@ export const TacticalPitch: React.FC = () => {
               <div className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xs">
                 <Briefcase className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
-                Teknik Direktörler & Taktik Kulübesi
+              <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">
+                <span className="sm:hidden">Teknik Direktörler</span>
+                <span className="hidden sm:inline">Teknik Direktörler & Taktik Kulübesi</span>
               </h3>
             </div>
             <span className="text-[11px] text-amber-400 font-bold hidden sm:inline-block">

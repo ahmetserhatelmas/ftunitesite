@@ -135,7 +135,7 @@ export const HomeReviewsPanel: React.FC = () => {
       {/* Header with Title and View All Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-50">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider shadow-xs">
               <Flame className="w-3 h-3 fill-slate-950" />
               CANLI TRİBÜN AKIŞI

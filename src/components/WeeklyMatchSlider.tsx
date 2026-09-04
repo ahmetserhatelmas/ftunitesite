@@ -89,16 +89,17 @@ export const WeeklyMatchSlider: React.FC = () => {
 
   return (
     <div className="w-full pb-1">
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <h2 className="text-xs font-black tracking-tight text-slate-900 uppercase">
-            {selectedWeek}. Hafta Fikstürü & Karşılaşmalar
+      <div className="flex items-center justify-between gap-2 mb-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <h2 className="text-xs font-black tracking-tight text-slate-900 uppercase truncate">
+            <span className="sm:hidden">{selectedWeek}. Hafta Maçları</span>
+            <span className="hidden sm:inline">{selectedWeek}. Hafta Fikstürü & Karşılaşmalar</span>
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-sm">
-            {weekMatches.length} Karşılaşma
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-sm whitespace-nowrap">
+            {weekMatches.length} Maç
           </span>
         </div>
       </div>
@@ -118,7 +119,7 @@ export const WeeklyMatchSlider: React.FC = () => {
               key={match.id}
               id={`match-card-${match.id}`}
               onClick={() => setSelectedMatchId(match.id)}
-              className={`relative text-left p-4 rounded-2xl transition-all group overflow-hidden ${
+              className={`relative text-left p-3 sm:p-4 rounded-2xl transition-all group overflow-hidden w-full min-w-0 ${
                 isLive
                   ? isSelected
                     ? 'bg-emerald-700 text-white shadow-xl shadow-emerald-800/30 border-2 border-rose-500 ring-2 ring-rose-400'
@@ -145,7 +146,7 @@ export const WeeklyMatchSlider: React.FC = () => {
 
               {/* Match Header: Status & Stadium */}
               <div className="flex items-center justify-between text-[11px] mb-3">
-                <span className={`flex items-center gap-1 font-medium truncate max-w-[150px] ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
+                <span className={`flex items-center gap-1 font-medium min-w-0 flex-1 ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
                   <MapPin className={`w-3 h-3 shrink-0 ${isSelected ? 'text-emerald-200' : 'text-slate-400'}`} />
                   <span className="truncate">{match.stadium}</span>
                 </span>
@@ -173,19 +174,20 @@ export const WeeklyMatchSlider: React.FC = () => {
               </div>
 
               {/* Match Teams & Scoreboard */}
-              <div className="flex items-center justify-between py-1 px-1">
+              <div className="flex items-center justify-between py-1 gap-1.5 min-w-0">
                 {/* Home Team */}
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <TeamLogo team={match.homeTeam} size="lg" shape="circle" className="ring-2 ring-white shrink-0" />
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0">
+                  <TeamLogo team={match.homeTeam} size="md" shape="circle" className="ring-2 ring-white shrink-0 sm:w-10 sm:h-10" />
                   <div className="min-w-0">
-                    <p className={`font-black text-xs sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
-                      {match.homeTeam.name}
+                    <p className={`font-black text-[11px] sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                      <span className="sm:hidden">{match.homeTeam.shortName || match.homeTeam.name}</span>
+                      <span className="hidden sm:inline">{match.homeTeam.name}</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Score */}
-                <div className={`px-3.5 py-1 rounded-xl font-mono font-black text-sm sm:text-base tracking-widest mx-2 shadow-sm ${
+                <div className={`px-2 sm:px-3.5 py-1 rounded-xl font-mono font-black text-xs sm:text-base tracking-tight sm:tracking-widest mx-1 sm:mx-2 shadow-sm shrink-0 ${
                   isSelected
                     ? 'bg-emerald-800 text-white border border-emerald-500'
                     : 'bg-slate-900 text-white'
@@ -194,13 +196,14 @@ export const WeeklyMatchSlider: React.FC = () => {
                 </div>
 
                 {/* Away Team */}
-                <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end text-right">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0 justify-end text-right">
                   <div className="min-w-0">
-                    <p className={`font-black text-xs sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
-                      {match.awayTeam.name}
+                    <p className={`font-black text-[11px] sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                      <span className="sm:hidden">{match.awayTeam.shortName || match.awayTeam.name}</span>
+                      <span className="hidden sm:inline">{match.awayTeam.name}</span>
                     </p>
                   </div>
-                  <TeamLogo team={match.awayTeam} size="lg" shape="circle" className="ring-2 ring-white shrink-0" />
+                  <TeamLogo team={match.awayTeam} size="md" shape="circle" className="ring-2 ring-white shrink-0 sm:w-10 sm:h-10" />
                 </div>
               </div>
 
@@ -208,7 +211,7 @@ export const WeeklyMatchSlider: React.FC = () => {
               <div className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
                 isSelected ? 'border-emerald-500/50 text-emerald-100' : 'border-slate-100 text-slate-500'
               }`}>
-                <span className="truncate font-medium">{match.date}</span>
+                <span className="truncate font-medium min-w-0 pr-2">{match.date}</span>
                 <div className="flex items-center gap-2">
                   <span className={`flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full ${
                     isSelected

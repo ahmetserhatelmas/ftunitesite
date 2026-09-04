@@ -179,11 +179,11 @@ export const PlayerReviewDrawer: React.FC = () => {
       <div className="w-full max-w-2xl bg-white border-l-2 border-emerald-100 h-full flex flex-col shadow-2xl text-slate-800 overflow-y-auto">
         
         {/* Top Header with Close Button */}
-        <div className="sticky top-0 z-20 bg-emerald-600 px-6 py-4 flex items-center justify-between text-white shadow-md">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-100">
-              Oyuncu Değerlendirme & Yorum Paneli
+        <div className="sticky top-0 z-20 bg-emerald-600 px-4 sm:px-6 py-4 flex items-center justify-between text-white shadow-md gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" />
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-100 truncate">
+              Oyuncu Değerlendirme
             </span>
           </div>
           <button
@@ -197,7 +197,7 @@ export const PlayerReviewDrawer: React.FC = () => {
         </div>
 
         {/* Player Profile & Match Stats Card */}
-        <div className="p-6 bg-slate-50 border-b border-emerald-100">
+        <div className="p-4 sm:p-6 bg-slate-50 border-b border-emerald-100">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             
             {/* Player Info */}
@@ -211,7 +211,7 @@ export const PlayerReviewDrawer: React.FC = () => {
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight truncate">
                     {selectedPlayer.name}
                   </h2>
                   <span className="text-xs px-2 py-0.5 rounded-lg font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">

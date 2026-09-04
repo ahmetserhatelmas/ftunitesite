@@ -159,7 +159,7 @@ export const ManagerReviewDrawer: React.FC = () => {
       >
         {/* Top Header Card */}
         <div
-          className="relative px-6 py-5 border-b border-slate-800 shrink-0"
+          className="relative px-4 sm:px-6 py-5 border-b border-slate-800 shrink-0"
           style={{
             background: `linear-gradient(135deg, ${team.primaryColor}25 0%, #0f172a 100%)`,
           }}

@@ -325,7 +325,7 @@ export const SearchAutocomplete: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="flex-1 max-w-lg mx-2 sm:mx-4 relative">
+    <div ref={containerRef} className="flex-1 min-w-0 max-w-lg sm:mx-4 relative">
       {/* Search Input Box */}
       <div className="relative">
         <Search className="w-4 h-4 text-emerald-200 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -341,8 +341,8 @@ export const SearchAutocomplete: React.FC = () => {
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Oyuncu, takım veya mevki ara (Osimhen, Fred, Rafa Silva, Kaleci)..."
-          className="w-full bg-emerald-700/60 hover:bg-emerald-700/80 focus:bg-white focus:text-slate-900 border border-emerald-500/80 focus:border-white rounded-full pl-10 pr-9 py-1.5 text-xs text-white placeholder-emerald-200 focus:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition shadow-inner"
+          placeholder="Oyuncu veya takım ara..."
+          className="w-full min-w-0 bg-emerald-700/60 hover:bg-emerald-700/80 focus:bg-white focus:text-slate-900 border border-emerald-500/80 focus:border-white rounded-full pl-9 sm:pl-10 pr-9 py-1.5 text-xs text-white placeholder-emerald-200 focus:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition shadow-inner"
         />
 
         {searchQuery && (
@@ -368,10 +368,10 @@ export const SearchAutocomplete: React.FC = () => {
           className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border-2 border-emerald-500/40 text-slate-900 overflow-hidden z-50 animate-fadeIn divide-y divide-slate-100 max-h-[78vh] flex flex-col"
         >
           {/* Header Bar inside Dropdown */}
-          <div className="p-3 bg-gradient-to-r from-emerald-50 to-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-xs font-black text-slate-800">
+          <div className="p-3 bg-gradient-to-r from-emerald-50 to-slate-50 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+              <span className="text-xs font-black text-slate-800 truncate">
                 {searchQuery.trim()
                   ? `"${searchQuery}" için ${totalResultsCount} sonuç bulundu`
                   : 'Süper Lig Hızlı Arama & Öneriler'}
@@ -380,7 +380,7 @@ export const SearchAutocomplete: React.FC = () => {
 
             {/* Filter Tabs */}
             {searchQuery.trim() && totalResultsCount > 0 && (
-              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold">
+              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold shrink-0 overflow-x-auto no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveFilter('all')}

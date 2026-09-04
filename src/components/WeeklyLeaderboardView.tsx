@@ -157,12 +157,12 @@ export const WeeklyLeaderboardView: React.FC = () => {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="bg-amber-400 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                 <Crown className="w-3.5 h-3.5 fill-slate-950" />
                 Süper Lig {selectedWeek}. Hafta • Genel Konsensüs
               </span>
-              <span className="text-emerald-200 text-xs font-bold">
+              <span className="hidden sm:inline text-emerald-200 text-xs font-bold">
                 Tüm Taraftarların Ortak Puanlama Sonuçları
               </span>
             </div>

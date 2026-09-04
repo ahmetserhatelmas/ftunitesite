@@ -177,7 +177,7 @@ export const LeagueStandingsCard: React.FC<LeagueStandingsProps> = ({
         </div>
 
         {/* Small Search Bar */}
-        <div className="relative flex-1 min-w-[120px]">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"

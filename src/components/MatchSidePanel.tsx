@@ -122,7 +122,7 @@ export const MatchSidePanel: React.FC = () => {
       <div className="bg-white border-2 border-emerald-100 rounded-3xl p-4 shadow-sm">
         
         {/* Navigation Tabs */}
-        <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl text-[11px] font-bold mb-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl text-[11px] font-bold mb-3.5">
           <button
             id="side-tab-stars"
             onClick={() => setActiveSideTab('stars')}
@@ -132,7 +132,7 @@ export const MatchSidePanel: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Crown className="w-3 h-3" />
+            <Crown className="w-3 h-3 shrink-0" />
             <span className="truncate">Yıldızlar</span>
           </button>
 
@@ -145,7 +145,7 @@ export const MatchSidePanel: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <MessageSquare className="w-3 h-3" />
+            <MessageSquare className="w-3 h-3 shrink-0" />
             <span className="truncate">Tribün ({matchReviews.length})</span>
           </button>
 

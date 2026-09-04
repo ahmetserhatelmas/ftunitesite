@@ -25,12 +25,12 @@ function MainAppContent() {
   const { activeView } = useApp();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
+    <div className="min-h-screen max-w-[100vw] overflow-x-hidden bg-slate-50 text-slate-800 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
       {/* Navigation Header */}
       <Header />
 
       {/* Main View Area */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-16 min-w-0 overflow-x-hidden">
         {activeView === 'my-reviews' ? (
           <PersonalReviewsView />
         ) : activeView === 'player-history' ? (
@@ -69,22 +69,22 @@ function MainAppContent() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-100 bg-white py-6 px-4 text-xs text-slate-500 shadow-inner">
-        <div className="w-full max-w-[1760px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs">
+      <footer className="border-t border-emerald-100 bg-white py-5 px-4 text-xs text-slate-500 shadow-inner">
+        <div className="w-full max-w-[1760px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0">
               FU
             </div>
-            <span className="font-black text-slate-800 tracking-tight">FUTBOL UNITE</span>
-            <span>—</span>
-            <span className="font-medium text-slate-600">Trendyol Süper Lig Canlı Futbolcu Performans & Taraftar Yorum Platformu</span>
+            <span className="font-black text-slate-800 tracking-tight shrink-0">FUTBOL UNITE</span>
+            <span className="hidden md:inline">—</span>
+            <span className="hidden md:inline font-medium text-slate-600">Trendyol Süper Lig Canlı Futbolcu Performans & Taraftar Yorum Platformu</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] font-bold text-slate-600">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-600">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Sistem Aktif</span>
-            <span>👔 Teknik Direktörler</span>
-            <span>🔥 Tüm Yorumlar Akışı</span>
-            <span>👑 Haftanın Sıralaması</span>
-            <span>★ Altın 11</span>
+            <span className="hidden sm:inline">👔 Teknik Direktörler</span>
+            <span className="hidden sm:inline">🔥 Tüm Yorumlar Akışı</span>
+            <span className="hidden sm:inline">👑 Haftanın Sıralaması</span>
+            <span className="hidden sm:inline">★ Altın 11</span>
           </div>
         </div>
       </footer>

@@ -36,7 +36,7 @@ export const MatchHero: React.FC = () => {
           <div className="absolute top-0 right-0 z-10">
             <div className="bg-gradient-to-l from-rose-600 via-rose-600 to-red-600 text-white text-xs font-black px-4 py-1.5 rounded-bl-2xl shadow-lg flex items-center gap-2 border-b border-l border-rose-300 animate-pulse">
               <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-              <span className="font-mono tracking-wider">CANLI MAÇ • {formattedLiveTime}</span>
+              <span className="font-mono tracking-wider"><span className="sm:hidden">CANLI {formattedLiveTime}</span><span className="hidden sm:inline">CANLI MAÇ • {formattedLiveTime}</span></span>
             </div>
           </div>
         )}
@@ -72,41 +72,42 @@ export const MatchHero: React.FC = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-slate-500 font-semibold pr-24 sm:pr-28">
-            <span>🏟️ {selectedMatch.stadium}</span>
-            <span>👔 Hakem: {selectedMatch.referee}</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-semibold sm:pr-28 min-w-0">
+            <span className="truncate max-w-[180px] sm:max-w-none">🏟️ {selectedMatch.stadium}</span>
+            <span className="truncate max-w-[200px] sm:max-w-none">👔 Hakem: {selectedMatch.referee}</span>
           </div>
         </div>
 
         {/* Main Matchup Arena */}
-        <div className="grid grid-cols-12 items-center gap-4 py-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 py-2 min-w-0">
           {/* Home Team */}
-          <div className="col-span-5 flex items-center justify-end gap-3 sm:gap-4 text-right">
-            <div>
-              <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">
-                {selectedMatch.homeTeam.name}
+          <div className="min-w-0 flex items-center justify-end gap-2 sm:gap-4 text-right">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                <span className="sm:hidden">{selectedMatch.homeTeam.shortName}</span>
+                <span className="hidden sm:inline">{selectedMatch.homeTeam.name}</span>
               </h1>
             </div>
             <TeamLogo
               team={selectedMatch.homeTeam}
-              size="2xl"
+              size="lg"
               shape="circle"
               className="ring-4 ring-slate-100 shadow-md shrink-0 sm:w-16 sm:h-16 sm:text-3xl"
             />
           </div>
 
           {/* Scoreboard in center */}
-          <div className="col-span-2 flex flex-col items-center justify-center text-center">
-            <div className={`px-4 py-2 rounded-2xl shadow-lg font-mono border ${
+          <div className="flex flex-col items-center justify-center text-center shrink-0">
+            <div className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-2xl shadow-lg font-mono border ${
               isLive
                 ? 'bg-rose-950 border-rose-500 ring-2 ring-rose-400/40 animate-pulse'
                 : 'bg-slate-900 border-slate-700'
             }`}>
-              <span className="text-2xl sm:text-4xl font-black text-white tracking-wider">
+              <span className="text-xl sm:text-4xl font-black text-white tracking-tight sm:tracking-wider">
                 {selectedMatch.homeScore} - {selectedMatch.awayScore}
               </span>
             </div>
-            <span className={`text-[10px] uppercase font-black tracking-wider mt-1.5 px-2.5 py-0.5 rounded-full border ${
+            <span className={`text-[10px] uppercase font-black tracking-wider mt-1.5 px-2 py-0.5 rounded-full border ${
               isLive
                 ? 'bg-rose-500 text-white border-rose-400 animate-pulse font-mono shadow-xs'
                 : selectedMatch.status === 'FT'
@@ -118,16 +119,17 @@ export const MatchHero: React.FC = () => {
           </div>
 
           {/* Away Team */}
-          <div className="col-span-5 flex items-center justify-start gap-3 sm:gap-4 text-left">
+          <div className="min-w-0 flex items-center justify-start gap-2 sm:gap-4 text-left">
             <TeamLogo
               team={selectedMatch.awayTeam}
-              size="2xl"
+              size="lg"
               shape="circle"
               className="ring-4 ring-slate-100 shadow-md shrink-0 sm:w-16 sm:h-16 sm:text-3xl"
             />
-            <div>
-              <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">
-                {selectedMatch.awayTeam.name}
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                <span className="sm:hidden">{selectedMatch.awayTeam.shortName}</span>
+                <span className="hidden sm:inline">{selectedMatch.awayTeam.name}</span>
               </h1>
             </div>
           </div>
@@ -135,7 +137,7 @@ export const MatchHero: React.FC = () => {
 
         {/* Match Events timeline bar */}
         {selectedMatch.events && selectedMatch.events.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2 text-xs">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-1.5 sm:gap-2 text-xs">
             <span className="text-slate-400 font-bold text-[11px] uppercase mr-1">Önemli Anlar:</span>
             {selectedMatch.events.map((event, idx) => (
               <div
@@ -163,40 +165,42 @@ export const MatchHero: React.FC = () => {
       <div className="mt-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border-2 border-emerald-100 p-2.5 rounded-2xl text-xs shadow-sm">
         
         {/* Left: View Switcher (Pitch / Tactical vs Roster List) */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl min-w-0 overflow-x-auto no-scrollbar">
           <button
             id="view-mode-pitch-btn"
             onClick={() => setActiveView('pitch')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black transition ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-black transition whitespace-nowrap ${
               activeView === 'pitch'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Saha Taktik Dizilişi</span>
+            <span className="sm:hidden">Saha</span>
+            <span className="hidden sm:inline">Saha Taktik Dizilişi</span>
           </button>
           
           <button
             id="view-mode-list-btn"
             onClick={() => setActiveView('list')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black transition ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-black transition whitespace-nowrap ${
               activeView === 'list'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
             <ListFilter className="w-3.5 h-3.5" />
-            <span>Kadro & Oyuncu Notları</span>
+            <span className="sm:hidden">Kadro</span>
+            <span className="hidden sm:inline">Kadro & Oyuncu Notları</span>
           </button>
         </div>
 
         {/* Center: Team Tab Filter */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl min-w-0 overflow-x-auto no-scrollbar">
           <button
             id="team-filter-home"
             onClick={() => setTeamTab('home')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black transition cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-black transition cursor-pointer whitespace-nowrap ${
               teamTab === 'home'
                 ? 'bg-white text-emerald-950 shadow-sm border border-emerald-300'
                 : 'text-slate-600 hover:text-slate-900'

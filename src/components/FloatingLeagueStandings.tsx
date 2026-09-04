@@ -24,7 +24,7 @@ export const FloatingLeagueStandings: React.FC = () => {
             id="floating-standings-trigger"
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group flex items-center gap-2.5 bg-slate-900/95 hover:bg-emerald-700 text-white pl-3.5 pr-4 py-2.5 rounded-full shadow-2xl border-2 border-emerald-400/40 hover:border-emerald-300 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
+            className="group flex items-center gap-2 bg-slate-900/95 hover:bg-emerald-700 text-white pl-2.5 pr-3 sm:pl-3.5 sm:pr-4 py-2 sm:py-2.5 rounded-full shadow-2xl border-2 border-emerald-400/40 hover:border-emerald-300 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95 max-w-[calc(100vw-2rem)]"
             title="Süper Lig Puan Durumu"
           >
             <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-black shadow-inner">
@@ -58,7 +58,7 @@ export const FloatingLeagueStandings: React.FC = () => {
             className={`bg-white rounded-3xl shadow-2xl border-2 border-emerald-500/30 overflow-hidden flex flex-col transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 ${
               isFullView
                 ? 'fixed inset-3 sm:inset-6 md:inset-10 lg:inset-x-auto lg:right-6 lg:bottom-6 lg:top-16 lg:w-[620px] z-50'
-                : 'w-[95vw] sm:w-[480px] max-h-[82vh] z-50'
+                : 'w-[min(95vw,calc(100vw-1.5rem))] sm:w-[480px] max-w-[calc(100vw-1.5rem)] max-h-[82vh] z-50'
             }`}
           >
             {/* Popover Top Bar */}
