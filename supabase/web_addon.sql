@@ -57,6 +57,10 @@ drop policy if exists "fu_web_reviews_update_own" on public.fu_web_reviews;
 create policy "fu_web_reviews_update_own" on public.fu_web_reviews
   for update using (auth.uid() = user_id);
 
+drop policy if exists "fu_web_reviews_delete_own" on public.fu_web_reviews;
+create policy "fu_web_reviews_delete_own" on public.fu_web_reviews
+  for delete using (auth.uid() = user_id);
+
 drop policy if exists "fu_web_matches_read" on public.fu_web_matches;
 create policy "fu_web_matches_read" on public.fu_web_matches for select using (true);
 

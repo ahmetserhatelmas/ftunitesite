@@ -56,6 +56,7 @@ export const PlayerReviewDrawer: React.FC = () => {
     setSelectedWeek,
     isFollowingUser,
     followingCount,
+    isOwnReview,
   } = useApp();
 
   const [ratingInput, setRatingInput] = useState<number>(8.0);
@@ -807,7 +808,7 @@ export const PlayerReviewDrawer: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {sortedReviews.map((review) => {
-                  const isMyReview = review.isUserSubmission || review.authorName === userProfile.name;
+                  const isMyReview = isOwnReview(review);
                   const isFollowed = !isMyReview && isFollowingUser(review.authorName);
 
                   return (

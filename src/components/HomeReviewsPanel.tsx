@@ -36,6 +36,7 @@ export const HomeReviewsPanel: React.FC = () => {
     userProfile,
     isFollowingUser,
     followingCount,
+    isOwnReview,
   } = useApp();
 
   const [activeQuickFilter, setActiveQuickFilter] = useState<'all' | 'popular' | 'top-rated' | 'followed' | 'gs' | 'fb' | 'bjk' | 'ts'>('all');
@@ -307,7 +308,7 @@ export const HomeReviewsPanel: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
           {filteredReviews.map((review) => {
-            const isMyReview = review.isUserSubmission || review.authorName === userProfile.name;
+            const isMyReview = isOwnReview(review);
             const isFollowed = !isMyReview && isFollowingUser(review.authorName);
 
             return (

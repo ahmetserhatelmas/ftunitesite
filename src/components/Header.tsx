@@ -32,6 +32,8 @@ export const Header: React.FC<HeaderProps> = () => {
     liveDataSource,
     userLevelInfo,
     registeredUserCount,
+    refreshLiveData,
+    isLiveSyncing,
   } = useApp();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -112,6 +114,16 @@ export const Header: React.FC<HeaderProps> = () => {
               title="Sonraki Hafta"
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              id="refresh-live-data-btn"
+              onClick={() => void refreshLiveData()}
+              disabled={isLiveSyncing}
+              className="flex items-center gap-1 ml-0.5 px-2 py-1 rounded-lg bg-amber-400/95 hover:bg-amber-300 disabled:opacity-60 text-slate-950 font-black text-[10px] sm:text-[11px] transition"
+              title="Skor ve yorumları yenile — bulunduğun sayfada kalır"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLiveSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Yenile</span>
             </button>
           </div>
 

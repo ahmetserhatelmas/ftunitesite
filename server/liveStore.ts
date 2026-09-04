@@ -234,3 +234,7 @@ export async function addPersistedReview(review: PlayerReview): Promise<void> {
   store.reviews = [...store.reviews.filter((item) => item.id !== review.id), review];
   await saveReview(review);
 }
+
+export async function removePersistedReview(reviewId: string): Promise<void> {
+  store.reviews = store.reviews.filter((item) => item.id !== reviewId);
+}

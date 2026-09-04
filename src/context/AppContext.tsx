@@ -16,7 +16,8 @@ import {
   signUpSharedAccount,
   syncSharedProfilePatch,
 } from '../lib/auth';
-import { loadWebReviews, saveWebReview } from '../lib/webReviews';
+import { deleteWebReview, loadWebReviews, saveWebReview } from '../lib/webReviews';
+import { isOwnReview, mergeReviewLists, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
 import { deriveActiveWeek, hasKickoffStarted, isMatchLive, matchHasStarted, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
@@ -122,6 +123,8 @@ interface AppContextType {
   liveDataSource: string;
   registeredUserCount: number | null;
   syncLiveMatches: (weekNumber?: number) => Promise<void>;
+  refreshLiveData: () => Promise<void>;
+  isOwnReview: (review?: PlayerReview | null) => boolean;
 
   // Follower & Level System
   followedCommentators: FollowedCommentator[];
@@ -209,8 +212,11 @@ const DEFAULT_GUEST_PROFILE: UserProfile = {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [leagues, setLeagues] = useState<League[]>(LEAGUES);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('super-lig');
-  const [selectedWeek, setSelectedWeekState] = useState<number>(1);
-  const userPickedWeek = useRef(false);
+  const [selectedWeek, setSelectedWeekState] = useState<number>(() => {
+    const stored = Number(sessionStorage.getItem('fu_selected_week'));
+    return Number.isFinite(stored) && stored >= 1 ? stored : 1;
+  });
+  const userPickedWeek = useRef(Boolean(sessionStorage.getItem('fu_selected_week')));
   const setSelectedWeek = (week: number) => {
     userPickedWeek.current = true;
     setSelectedWeekState(week);
@@ -254,10 +260,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(() => sessionStorage.getItem('fu_selected_match'));
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null);
-  const [activeView, setActiveView] = useState<'pitch' | 'list' | 'totw' | 'ranking' | 'all-reviews' | 'my-reviews' | 'player-history' | 'managers'>('pitch');
+  const [activeView, setActiveView] = useState<'pitch' | 'list' | 'totw' | 'ranking' | 'all-reviews' | 'my-reviews' | 'player-history' | 'managers'>(() => {
+    const stored = sessionStorage.getItem('fu_active_view');
+    const allowed = ['pitch', 'list', 'totw', 'ranking', 'all-reviews', 'my-reviews', 'player-history', 'managers'] as const;
+    return allowed.includes(stored as (typeof allowed)[number]) ? (stored as (typeof allowed)[number]) : 'pitch';
+  });
   const [teamTab, setTeamTab] = useState<'all' | 'home' | 'away'>('home');
   const [positionFilter, setPositionFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -475,16 +485,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const hydrate = async () => {
       const { data } = await sb.auth.getSession();
+      let profile = DEFAULT_GUEST_PROFILE;
       if (data.session?.user) {
-        const profile = await loadSharedProfile(data.session.user);
+        profile = await loadSharedProfile(data.session.user);
         setUserProfile(profile);
       }
       const cloudReviews = await loadWebReviews();
       if (cloudReviews.length) {
-        setReviews((prev) => {
-          const ids = new Set(prev.map((r) => r.id));
-          return [...prev, ...cloudReviews.filter((r) => !ids.has(r.id)).map(sanitizeReview)];
-        });
+        setReviews((prev) => mergeReviewLists(prev, cloudReviews.map(sanitizeReview), profile));
       }
     };
     void hydrate();
@@ -509,7 +517,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsQuickRegisterOpen(true);
   }, [userProfile]);
 
-  const applyLivePayload = (data: any, fallbackToMock = false) => {
+  const applyLivePayload = (data: any, fallbackToMock = false, opts?: { keepWeek?: boolean }) => {
     let started: Match[] | undefined;
     if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
       started = (data.matches as Match[]).map((match) => {
@@ -525,7 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
       const homeWeek = deriveActiveWeek(started, data.league?.currentWeek || 1);
-      if (!userPickedWeek.current) {
+      if (!userPickedWeek.current && !opts?.keepWeek) {
         setSelectedWeekState(homeWeek);
       }
     } else if (fallbackToMock) {
@@ -548,11 +556,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
     if (Array.isArray(data.reviews) && data.reviews.length > 0) {
-      setReviews((prev) => {
-        const localIds = new Set(prev.map((r) => r.id));
-        const incoming = data.reviews.filter((r: PlayerReview) => !localIds.has(r.id)).map(sanitizeReview);
-        return incoming.length ? [...prev, ...incoming] : prev;
-      });
+      setReviews((prev) => mergeReviewLists(prev, data.reviews.map(sanitizeReview), userProfile));
     }
     if (data.lastSync) {
       const dt = new Date(data.lastSync);
@@ -635,6 +639,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const refreshLiveData = async () => {
+    setIsLiveSyncing(true);
+    try {
+      const res = await fetch('/api/live/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ week: selectedWeek }),
+      });
+      if (res.ok) applyLivePayload(await res.json(), false, { keepWeek: true });
+      const cloud = await loadWebReviews();
+      setReviews((prev) => mergeReviewLists(prev, cloud.map(sanitizeReview), userProfile));
+    } catch (err) {
+      console.warn('Sayfa yenileme hatası:', err);
+    } finally {
+      setIsLiveSyncing(false);
+    }
+  };
+
   // Continuous Real-Time Match Clock Ticker for LIVE matches
   useEffect(() => {
     const timer = setInterval(() => {
@@ -673,6 +695,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('fu_selected_week', String(selectedWeek));
+  }, [selectedWeek]);
+
+  useEffect(() => {
+    sessionStorage.setItem('fu_active_view', activeView);
+  }, [activeView]);
+
+  useEffect(() => {
+    if (selectedMatchId) sessionStorage.setItem('fu_selected_match', selectedMatchId);
+  }, [selectedMatchId]);
+
+  useEffect(() => {
+    setReviews((prev) => prev.map((review) => stampReviewOwnership(review, userProfile)));
+  }, [userProfile.id, userProfile.isRegistered, userProfile.name, userProfile.nickname]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -748,10 +786,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dislikedByMe: false,
       isReportedByMe: false,
       isUserSubmission: true,
+      authorUserId: userProfile.isRegistered ? userProfile.id : undefined,
     });
 
     setReviews(prev => [newReview, ...prev]);
-    void saveWebReview(newReview, userProfile.id);
+    void saveWebReview(newReview, userProfile.isRegistered ? userProfile.id : undefined);
 
     // Confetti effect for rating participation
     try {
@@ -766,7 +805,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteReview = (reviewId: string) => {
+    const target = reviews.find((r) => r.id === reviewId);
+    if (!target || !isOwnReview(target, userProfile)) return;
     setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    void deleteWebReview(reviewId);
+    void fetch(`/api/reviews/${encodeURIComponent(reviewId)}`, { method: 'DELETE' });
   };
 
   const toggleLikeReview = (reviewId: string) => {
@@ -1185,7 +1228,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const getUserReviews = () => {
-    return reviews.filter(r => r.isUserSubmission || r.likedByMe);
+    return reviews.filter((r) => isOwnReview(r, userProfile));
   };
 
   const getMyReviewsRepliesCount = (): number => {
@@ -1470,9 +1513,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // User Level & XP Calculations
-  const userAuthoredReviews = reviews.filter(
-    (r) => r.isUserSubmission || r.authorName === userProfile.name || (userProfile.nickname && r.authorName === userProfile.nickname)
-  );
+  const userAuthoredReviews = reviews.filter((r) => isOwnReview(r, userProfile));
   const userReviewsCount = userAuthoredReviews.length;
   const likesOnReviews = userAuthoredReviews.reduce((sum, r) => sum + (r.likes || 0), 0);
 
@@ -1678,6 +1719,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         liveDataSource,
         registeredUserCount,
         syncLiveMatches,
+        refreshLiveData,
+        isOwnReview: (review) => isOwnReview(review, userProfile),
         followedCommentators,
         toggleFollowUser,
         isFollowingUser,

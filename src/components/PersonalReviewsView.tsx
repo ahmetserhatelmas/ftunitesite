@@ -51,6 +51,7 @@ export const PersonalReviewsView: React.FC = () => {
     simulateIncomingReply,
     markAllRepliesAsRead,
     markReviewRepliesAsRead,
+    isOwnReview,
   } = useApp();
 
   // Automatically mark all notifications as read when opening personal reviews
@@ -60,10 +61,8 @@ export const PersonalReviewsView: React.FC = () => {
 
   // User's own reviews
   const myReviews = useMemo(() => {
-    return reviews.filter(
-      (r) => r.isUserSubmission || r.authorName === userProfile.name
-    );
-  }, [reviews, userProfile.name]);
+    return reviews.filter((r) => isOwnReview(r));
+  }, [reviews, isOwnReview]);
 
   // Current week matches
   const currentWeekMatches = useMemo(() => {

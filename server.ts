@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { PlayerReview } from './src/types';
-import { addPersistedReview, ensureBootstrapped, getSnapshot, syncSeason, syncWeek } from './server/liveStore';
+import { addPersistedReview, ensureBootstrapped, getSnapshot, removePersistedReview, syncSeason, syncWeek } from './server/liveStore';
 import { getApiSportsKey, getLeagueId } from './server/apiSports';
 import { isSupabaseConfigured } from './server/supabase';
 import { envNumber } from './server/env';
@@ -100,6 +100,15 @@ async function startServer() {
     }
     await addPersistedReview(review);
     res.json({ success: true, review });
+  });
+
+  app.delete('/api/reviews/:id', async (req, res) => {
+    const reviewId = String(req.params.id || '');
+    if (!reviewId) {
+      return res.status(400).json({ error: 'Geçersiz yorum' });
+    }
+    await removePersistedReview(reviewId);
+    res.json({ success: true });
   });
 
   if (process.env.NODE_ENV !== 'production') {

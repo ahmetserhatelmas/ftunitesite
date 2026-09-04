@@ -87,6 +87,7 @@ export interface PlayerReview {
   teamName?: string;
   matchId: string;
   authorName: string;
+  authorUserId?: string;
   authorAvatar?: string;
   authorTeamBadge?: string;
   authorFanOf?: string;
