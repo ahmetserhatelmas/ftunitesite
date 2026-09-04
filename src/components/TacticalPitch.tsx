@@ -19,12 +19,16 @@ export const TacticalPitch: React.FC = () => {
     getManagerAverageRating,
     getManagerCommentCount,
     reviews,
+    canWriteMatchReview,
+    canRateTeam,
   } = useApp();
 
   // Genel Puanlamalar Toggle: By default FALSE (clean rating mode where user scores independently)
   const [showGeneralRatings, setShowGeneralRatings] = useState<boolean>(false);
 
   if (!selectedMatch) return null;
+
+  const canWrite = canWriteMatchReview(selectedMatch);
 
   // Filter players based on teamTab and positionFilter (search engine results do not affect pitch layout)
   const filterPlayer = (player: Player) => {
@@ -143,13 +147,17 @@ export const TacticalPitch: React.FC = () => {
             /* Mode 2: KİŞİSEL PUANLAMA ALANI (Kullanıcının kendi verdiği not) */
             <div className="absolute -bottom-1 -right-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 border border-white shadow-md flex items-center gap-0.5">
               <Star className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
-              <span>{userReview.rating.toFixed(1)}</span>
+              <span>{typeof userReview.rating === 'number' ? userReview.rating.toFixed(1) : '✓'}</span>
             </div>
           ) : (
             /* Mode 2: Henüz puan verilmemişse sade Puanla butonu */
-            <div className="absolute -bottom-1 -right-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-white/95 text-emerald-800 border border-emerald-300 shadow-sm flex items-center gap-0.5 group-hover:bg-emerald-600 group-hover:text-white transition">
-              <Star className="w-2 h-2 text-amber-500 fill-amber-400" />
-              <span>Puanla</span>
+            <div className={`absolute -bottom-1 -right-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold border shadow-sm flex items-center gap-0.5 ${
+              canWrite
+                ? 'bg-white/95 text-emerald-800 border-emerald-300 group-hover:bg-emerald-600 group-hover:text-white transition'
+                : 'bg-slate-100 text-slate-500 border-slate-300'
+            }`}>
+              <Star className={`w-2 h-2 ${canWrite ? 'text-amber-500 fill-amber-400' : 'text-slate-400'}`} />
+              <span>{canWrite ? (canRateTeam(player.teamId) ? 'Puanla' : 'Yorumla') : 'Kilitli'}</span>
             </div>
           )}
 
@@ -394,7 +402,7 @@ export const TacticalPitch: React.FC = () => {
                         <span>{count > 0 ? rating.toFixed(1) : '—'}</span>
                       </div>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
-                        {count > 0 ? `${count} oy (${commentsCount} yorum)` : userReview ? 'Puanladın' : '+ Puanla'}
+                        {count > 0 ? `${count} oy (${commentsCount} yorum)` : userReview ? 'Puanladın' : canWrite ? '+ Puanla' : 'Kilitli'}
                       </span>
                     </div>
                   </div>
@@ -447,7 +455,7 @@ export const TacticalPitch: React.FC = () => {
                         <span>{count > 0 ? rating.toFixed(1) : '—'}</span>
                       </div>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
-                        {count > 0 ? `${count} oy (${commentsCount} yorum)` : userReview ? 'Puanladın' : '+ Puanla'}
+                        {count > 0 ? `${count} oy (${commentsCount} yorum)` : userReview ? 'Puanladın' : canWrite ? '+ Puanla' : 'Kilitli'}
                       </span>
                     </div>
                   </div>
@@ -502,11 +510,11 @@ export const TacticalPitch: React.FC = () => {
                           </span>
                         ) : userReview ? (
                           <span className="font-black text-slate-950 bg-amber-300 px-1 rounded">
-                            ★ {userReview.rating.toFixed(1)} (Notun)
+                            ★ {typeof userReview.rating === 'number' ? `${userReview.rating.toFixed(1)} (Notun)` : 'Yorumun'}
                           </span>
                         ) : (
-                          <span className="font-medium text-emerald-700 bg-emerald-50 px-1 rounded">
-                            + Puanla
+                          <span className={`font-medium px-1 rounded ${canWrite ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-slate-100'}`}>
+                            {canWrite ? (canRateTeam(sub.teamId) ? '+ Puanla' : 'Yorumla') : 'Kilitli'}
                           </span>
                         )}
                         <span>•</span>

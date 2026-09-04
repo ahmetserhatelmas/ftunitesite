@@ -43,6 +43,8 @@ export const PersonalReviewsView: React.FC = () => {
     getPlayerAverageRating,
     isRegistered,
     requireAuth,
+    canWriteMatchReview,
+    canRateTeam,
     setIsQuickRegisterOpen,
     myReviewsRepliesCount,
     simulateIncomingReply,
@@ -65,9 +67,9 @@ export const PersonalReviewsView: React.FC = () => {
   // Current week matches
   const currentWeekMatches = useMemo(() => {
     return matches.filter(
-      (m) => m.leagueId === selectedLeagueId && m.week === selectedWeek
+      (m) => m.leagueId === selectedLeagueId && m.week === selectedWeek && canWriteMatchReview(m)
     );
-  }, [matches, selectedLeagueId, selectedWeek]);
+  }, [matches, selectedLeagueId, selectedWeek, canWriteMatchReview]);
 
   // All players in current week
   const allWeekPlayersWithMatch = useMemo(() => {
@@ -97,14 +99,15 @@ export const PersonalReviewsView: React.FC = () => {
 
   // Personal statistics
   const totalMyReviews = myReviews.length;
-  const avgMyRating = totalMyReviews > 0
-    ? (myReviews.reduce((acc, r) => acc + r.rating, 0) / totalMyReviews).toFixed(1)
-    : '0.0';
+  const scoredMyReviews = myReviews.filter((r) => typeof r.rating === 'number' && r.rating > 0);
+  const avgMyRating = scoredMyReviews.length > 0
+    ? (scoredMyReviews.reduce((acc, r) => acc + (r.rating || 0), 0) / scoredMyReviews.length).toFixed(1)
+    : '—';
   const totalLikesReceived = myReviews.reduce((acc, r) => acc + (r.likes || 0), 0);
 
   const highestRated = useMemo(() => {
     if (myReviews.length === 0) return null;
-    return [...myReviews].sort((a, b) => b.rating - a.rating)[0];
+    return [...myReviews].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
   }, [myReviews]);
 
   // Quick review form state
@@ -116,6 +119,15 @@ export const PersonalReviewsView: React.FC = () => {
   const [formNoComment, setFormNoComment] = useState<boolean>(false);
   const [formSelectedTags, setFormSelectedTags] = useState<string[]>([]);
   const [formSubmittedSuccess, setFormSubmittedSuccess] = useState(false);
+
+  const formSelectedPlayer = useMemo(() => {
+    if (!formMatchId || !formPlayerId) return undefined;
+    const match = matches.find((m) => m.id === formMatchId);
+    return match
+      ? [...match.homePlayers, ...match.awayPlayers].find((p) => p.id === formPlayerId)
+      : undefined;
+  }, [formMatchId, formPlayerId, matches]);
+  const formCanScore = canRateTeam(formSelectedPlayer?.teamId);
 
   // List filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,7 +160,10 @@ export const PersonalReviewsView: React.FC = () => {
         ? getPlayerAverageRating(player.id, match.id).rating
         : 0;
 
-      const diff = generalRating > 0 ? (review.rating - generalRating).toFixed(1) : '0.0';
+      const diff =
+        typeof review.rating === 'number' && generalRating > 0
+          ? (review.rating - generalRating).toFixed(1)
+          : '0.0';
 
       return {
         ...review,
@@ -185,8 +200,8 @@ export const PersonalReviewsView: React.FC = () => {
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'highest') return b.rating - a.rating;
-        if (sortBy === 'lowest') return a.rating - b.rating;
+        if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1);
+        if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99);
         if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0);
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
@@ -222,23 +237,28 @@ export const PersonalReviewsView: React.FC = () => {
 
     requireAuth(() => {
       const match = matches.find((m) => m.id === formMatchId);
-      if (match && userProfile.favoriteTeamId) {
-        const isHome = match.homeTeam.id === userProfile.favoriteTeamId && match.homePlayers.some((p) => p.id === formPlayerId);
-        const isAway = match.awayTeam.id === userProfile.favoriteTeamId && match.awayPlayers.some((p) => p.id === formPlayerId);
-        if (!isHome && !isAway) {
-          return;
-        }
+      if (!canWriteMatchReview(match)) {
+        return;
+      }
+      const player = match
+        ? [...match.homePlayers, ...match.awayPlayers].find((p) => p.id === formPlayerId)
+        : undefined;
+      const canScore = canRateTeam(player?.teamId);
+      const comment = formNoComment && canScore ? '' : formComment.trim();
+      if (!canScore && !comment) {
+        return;
       }
 
       addReview({
         playerId: formPlayerId,
         matchId: formMatchId,
+        teamId: player?.teamId,
         authorName: userProfile.nickname || userProfile.name,
         authorTeamBadge: userProfile.favoriteTeamBadge,
         authorFanOf: userProfile.favoriteTeamName,
-        rating: Number(formRating.toFixed(1)),
-        comment: formNoComment ? '' : (formComment.trim() || 'Taktik ve oyun içi katkısı ile dikkat çeken bir performans sergiledi.'),
-        tags: formSelectedTags.length > 0 ? formSelectedTags : ['Taktik Lideri'],
+        rating: canScore ? Number(formRating.toFixed(1)) : undefined,
+        comment: comment || (canScore ? 'Taktik ve oyun içi katkısı ile dikkat çeken bir performans sergiledi.' : ''),
+        tags: canScore && formSelectedTags.length > 0 ? formSelectedTags : [],
       });
 
       setFormSubmittedSuccess(true);
@@ -415,7 +435,7 @@ export const PersonalReviewsView: React.FC = () => {
 
               {/* Player Select */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-700">2. Puanlanacak Futbolcuyu Seçin:</label>
+                <label className="text-xs font-black text-slate-700">2. Futbolcuyu Seçin:</label>
                 <select
                   value={formPlayerId}
                   onChange={(e) => setFormPlayerId(e.target.value)}
@@ -433,25 +453,17 @@ export const PersonalReviewsView: React.FC = () => {
 
                     return (
                       <>
-                        <optgroup label={`${match.homeTeam.name} Oyuncuları ${isHomeFav ? '(Takımınız - Puanlanabilir)' : '(Diğer Takım - Kilitli)'}`}>
+                        <optgroup label={`${match.homeTeam.name} Oyuncuları ${isHomeFav ? '(Takımınız - Puan + Yorum)' : '(Yalnızca yorum)'}`}>
                           {match.homePlayers.map((p) => (
-                            <option
-                              key={p.id}
-                              value={p.id}
-                              disabled={!isHomeFav && Boolean(userProfile.favoriteTeamId)}
-                            >
-                              #{p.number} {p.name} ({p.position}) {!isHomeFav && userProfile.favoriteTeamId ? '🔒 (Sadece kendi takımınızı puanlayabilirsiniz)' : ''}
+                            <option key={p.id} value={p.id}>
+                              #{p.number} {p.name} ({p.position}){!isHomeFav && userProfile.favoriteTeamId ? ' — yorum' : ''}
                             </option>
                           ))}
                         </optgroup>
-                        <optgroup label={`${match.awayTeam.name} Oyuncuları ${isAwayFav ? '(Takımınız - Puanlanabilir)' : '(Diğer Takım - Kilitli)'}`}>
+                        <optgroup label={`${match.awayTeam.name} Oyuncuları ${isAwayFav ? '(Takımınız - Puan + Yorum)' : '(Yalnızca yorum)'}`}>
                           {match.awayPlayers.map((p) => (
-                            <option
-                              key={p.id}
-                              value={p.id}
-                              disabled={!isAwayFav && Boolean(userProfile.favoriteTeamId)}
-                            >
-                              #{p.number} {p.name} ({p.position}) {!isAwayFav && userProfile.favoriteTeamId ? '🔒 (Sadece kendi takımınızı puanlayabilirsiniz)' : ''}
+                            <option key={p.id} value={p.id}>
+                              #{p.number} {p.name} ({p.position}){!isAwayFav && userProfile.favoriteTeamId ? ' — yorum' : ''}
                             </option>
                           ))}
                         </optgroup>
@@ -463,7 +475,7 @@ export const PersonalReviewsView: React.FC = () => {
 
             </div>
 
-            {/* Step B: Rating Slider */}
+            {formCanScore && (
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-black text-slate-800">
@@ -493,8 +505,18 @@ export const PersonalReviewsView: React.FC = () => {
                 <span>10.0 (Mükemmel)</span>
               </div>
             </div>
+            )}
 
-            {/* Step C: Quick Tags */}
+            {!formCanScore && formPlayerId && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-950">
+                <p className="font-black">Puan veremezsiniz, yorum yazabilirsiniz.</p>
+                <p className="mt-1 text-slate-600">
+                  Taraftarı olmadığınız takımın oyuncularına not verilemez; maç başladıysa yorum bırakabilirsiniz.
+                </p>
+              </div>
+            )}
+
+            {formCanScore && (
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-700">
                 4. Performans Etiketleri Seçin (Maks 4):
@@ -520,15 +542,16 @@ export const PersonalReviewsView: React.FC = () => {
                 })}
               </div>
             </div>
+            )}
 
             {/* Step D: Tactical Comment & No-Comment Option */}
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center justify-between gap-1">
                 <label className="text-xs font-black text-slate-700">
-                  5. Kişisel Yorumunuz & Taktik Analiziniz:
+                  {formCanScore ? '5. Kişisel Yorumunuz & Taktik Analiziniz:' : '3. Yorumunuz:'}
                 </label>
                 
-                {/* Clickable Pill Checkbox */}
+                {formCanScore && (
                 <button
                   type="button"
                   id="personal-no-comment-button"
@@ -553,9 +576,10 @@ export const PersonalReviewsView: React.FC = () => {
                   />
                   <span>Yorum yapmak istemiyorum</span>
                 </button>
+                )}
               </div>
 
-              {formNoComment ? (
+              {formCanScore && formNoComment ? (
                 <div className="bg-amber-50/90 border-2 border-dashed border-amber-300 rounded-xl p-3 flex items-center gap-2.5 text-slate-800 text-xs font-medium animate-fadeIn">
                   <Star className="w-5 h-5 text-amber-500 fill-amber-400 shrink-0" />
                   <div>
@@ -604,9 +628,9 @@ export const PersonalReviewsView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                disabled={!formMatchId || !formPlayerId}
+                disabled={!formMatchId || !formPlayerId || (!formCanScore && !formComment.trim())}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition shadow-md disabled:opacity-40 cursor-pointer ${
-                  formNoComment
+                  formCanScore && formNoComment
                     ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 shadow-amber-400/30'
                     : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 }`}
@@ -618,8 +642,14 @@ export const PersonalReviewsView: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Star className={`w-4 h-4 ${formNoComment ? 'fill-slate-950' : 'fill-white'}`} />
-                    <span>{formNoComment ? `${formRating.toFixed(1)} ★ Puanı Hemen Kaydet` : 'Kişisel Değerlendirmeyi Kaydet'}</span>
+                    <Star className={`w-4 h-4 ${formCanScore && formNoComment ? 'fill-slate-950' : 'fill-white'}`} />
+                    <span>
+                      {formCanScore && formNoComment
+                        ? `${formRating.toFixed(1)} ★ Puanı Hemen Kaydet`
+                        : formCanScore
+                        ? 'Kişisel Değerlendirmeyi Kaydet'
+                        : 'Yorumu Kaydet'}
+                    </span>
                   </>
                 )}
               </button>
@@ -666,7 +696,7 @@ export const PersonalReviewsView: React.FC = () => {
                   onClick={() => startRatingForPlayer(item.match.id, item.player.id)}
                   className="w-full py-1 bg-white hover:bg-emerald-600 text-slate-700 hover:text-white border border-slate-300 hover:border-emerald-600 rounded-xl text-[10px] font-black transition shadow-xs"
                 >
-                  + Puanla
+                  {canRateTeam(item.player.teamId) ? '+ Puanla' : '+ Yorumla'}
                 </button>
               </div>
             ))}
@@ -796,10 +826,10 @@ export const PersonalReviewsView: React.FC = () => {
                   <div className="flex flex-col items-end shrink-0">
                     <div className="flex items-center gap-1 bg-amber-400 text-slate-950 px-2.5 py-1 rounded-xl font-mono font-black text-xs shadow-xs border border-amber-300">
                       <Star className="w-3.5 h-3.5 fill-slate-950" />
-                      <span>Senin Notun: {review.rating.toFixed(1)}</span>
+                      <span>{typeof review.rating === 'number' ? `Senin Notun: ${review.rating.toFixed(1)}` : 'Yorumun'}</span>
                     </div>
 
-                    {review.generalRating > 0 && (
+                    {typeof review.rating === 'number' && review.generalRating > 0 && (
                       <span className="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1">
                         Genel: <strong className="text-slate-800">{review.generalRating.toFixed(1)}</strong>
                         <span

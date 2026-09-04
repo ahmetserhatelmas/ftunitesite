@@ -17,6 +17,7 @@ import {
   syncSharedProfilePatch,
 } from '../lib/auth';
 import { loadWebReviews, saveWebReview } from '../lib/webReviews';
+import { fetchRegisteredUserCount } from '../lib/userCount';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -38,6 +39,9 @@ interface AppContextType {
   setSelectedWeek: (week: number) => void;
   currentWeek: number;
   isPastWeek: (week: number) => boolean;
+  canWriteMatchReview: (match?: Match | null) => boolean;
+  matchWriteLock: (match?: Match | null) => 'none' | 'unplayed';
+  canRateTeam: (teamId?: string | null) => boolean;
   matches: Match[];
   standings: StandingTeam[];
   standingsMeta: { seasonLabel: string; week: number; updatedAt: string };
@@ -115,6 +119,7 @@ interface AppContextType {
   isLiveSyncing: boolean;
   lastLiveSyncTime: string;
   liveDataSource: string;
+  registeredUserCount: number | null;
   syncLiveMatches: (weekNumber?: number) => Promise<void>;
 
   // Follower & Level System
@@ -211,6 +216,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const currentLeague = leagues.find((l) => l.id === selectedLeagueId) || leagues[0];
   const currentWeek = currentLeague?.currentWeek || 1;
   const isPastWeek = (weekNumber: number) => weekNumber < currentWeek;
+  const canWriteMatchReview = (match?: Match | null) => {
+    if (!match) return false;
+    return match.status === 'FT' || match.status === 'LIVE';
+  };
+  const matchWriteLock = (match?: Match | null): 'none' | 'unplayed' => {
+    return canWriteMatchReview(match) ? 'none' : 'unplayed';
+  };
+  const canRateTeam = (teamId?: string | null) => {
+    if (!userProfile.favoriteTeamId || userProfile.favoriteTeamId === 'general') return true;
+    return Boolean(teamId && teamId === userProfile.favoriteTeamId);
+  };
   
   const [matches, setMatches] = useState<Match[]>([]);
 
@@ -244,6 +260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLiveSyncing, setIsLiveSyncing] = useState<boolean>(false);
   const [lastLiveSyncTime, setLastLiveSyncTime] = useState<string>('Canlı akış aktif');
   const [liveDataSource, setLiveDataSource] = useState<string>('Trendyol Süper Lig Canlı Fikstür & Kadro Merkezi');
+  const [registeredUserCount, setRegisteredUserCount] = useState<number | null>(null);
 
   const [readReplyIds, setReadReplyIds] = useState<string[]>(() => {
     try {
@@ -432,6 +449,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     celebrateAndResume();
     return { ok: true };
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchRegisteredUserCount().then((count) => {
+      if (!cancelled && count != null) setRegisteredUserCount(count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const sb = getBrowserSupabase();
@@ -634,10 +661,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [selectedLeagueId, selectedWeek, matches, selectedMatchId]);
 
   const addReview = (reviewData: Omit<PlayerReview, 'id' | 'createdAt' | 'likes' | 'likedByMe' | 'isUserSubmission'>) => {
-    // Check if match belongs to a past week
     const targetMatch = matches.find((m) => m.id === reviewData.matchId);
-    if (targetMatch && isPastWeek(targetMatch.week)) {
-      console.warn('Geçmiş haftalar için puanlama ve yorum yapılamaz.');
+    if (!canWriteMatchReview(targetMatch)) {
+      console.warn('Maç başlamadan puan veya yorum yazılamaz.');
+      return;
+    }
+
+    const scoredTeamId =
+      reviewData.teamId ||
+      (targetMatch &&
+        [...targetMatch.homePlayers, ...targetMatch.awayPlayers].find((p) => p.id === reviewData.playerId)?.teamId);
+    const allowScore = canRateTeam(scoredTeamId);
+    const comment = (reviewData.comment || '').trim();
+    if (!allowScore && !comment) {
+      console.warn('Rakip takıma yalnızca yorum yazılabilir.');
       return;
     }
 
@@ -646,7 +683,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newReview: PlayerReview = sanitizeReview({
       ...reviewData,
-      comment: (reviewData.comment || '').slice(0, 1000),
+      rating: allowScore ? reviewData.rating : undefined,
+      comment: comment.slice(0, 1000),
       id: `rev-user-${Date.now()}`,
       createdAt: formattedDate,
       likes: 1,
@@ -895,8 +933,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const voteMotm = (matchId: string, playerId: string) => {
     const targetMatch = matches.find((m) => m.id === matchId);
-    if (targetMatch && isPastWeek(targetMatch.week)) {
-      console.warn('Geçmiş haftalar için maçın adamı oylaması yapılamaz.');
+    const playerTeamId = targetMatch
+      ? [...targetMatch.homePlayers, ...targetMatch.awayPlayers].find((p) => p.id === playerId)?.teamId
+      : undefined;
+    if (!canWriteMatchReview(targetMatch) || !canRateTeam(playerTeamId)) {
+      console.warn('Maçın adamı oyu yalnızca maç başladıktan sonra ve tuttuğunuz takım için verilebilir.');
       return;
     }
 
@@ -954,15 +995,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? reviews.filter((r) => r.playerId === playerId && r.matchId === matchId)
       : reviews.filter((r) => r.playerId === playerId);
 
-    if (playerReviews.length === 0) {
+    const scored = playerReviews.filter((r) => typeof r.rating === 'number' && r.rating > 0);
+    if (scored.length === 0) {
       return { rating: 0, count: 0 };
     }
 
-    const sum = playerReviews.reduce((acc, curr) => acc + curr.rating, 0);
-    const avg = sum / playerReviews.length;
+    const sum = scored.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+    const avg = sum / scored.length;
     return {
       rating: parseFloat(avg.toFixed(1)),
-      count: playerReviews.length,
+      count: scored.length,
     };
   };
 
@@ -1225,15 +1267,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? reviews.filter((r) => (r.playerId === managerId || r.managerId === managerId) && r.matchId === matchId)
       : reviews.filter((r) => r.playerId === managerId || r.managerId === managerId);
 
-    if (mgrReviews.length === 0) {
+    const scored = mgrReviews.filter((r) => typeof r.rating === 'number' && r.rating > 0);
+    if (scored.length === 0) {
       return { rating: 0, count: 0 };
     }
 
-    const sum = mgrReviews.reduce((acc, curr) => acc + curr.rating, 0);
-    const avg = sum / mgrReviews.length;
+    const sum = scored.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+    const avg = sum / scored.length;
     return {
       rating: parseFloat(avg.toFixed(1)),
-      count: mgrReviews.length,
+      count: scored.length,
     };
   };
 
@@ -1487,6 +1530,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedWeek,
         currentWeek,
         isPastWeek,
+        canWriteMatchReview,
+        matchWriteLock,
+        canRateTeam,
         matches,
         standings,
         standingsMeta,
@@ -1563,6 +1609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLiveSyncing,
         lastLiveSyncTime,
         liveDataSource,
+        registeredUserCount,
         syncLiveMatches,
         followedCommentators,
         toggleFollowUser,

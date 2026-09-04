@@ -98,7 +98,7 @@ export const MyReviewsModal: React.FC = () => {
                     <div className="flex items-center gap-1.5 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl shadow-sm">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span className="font-mono font-black text-xs text-slate-900">
-                        {review.rating.toFixed(1)}
+                        {typeof review.rating === 'number' ? review.rating.toFixed(1) : 'Yorum'}
                       </span>
                     </div>
                   </div>

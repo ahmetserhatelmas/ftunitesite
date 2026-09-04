@@ -44,7 +44,7 @@ export const ManagerReviewDrawer: React.FC = () => {
     requireAuth,
     setIsProfileOpen,
     setIsQuickRegisterOpen,
-    isPastWeek,
+    matchWriteLock,
     matches,
   } = useApp();
 
@@ -75,7 +75,8 @@ export const ManagerReviewDrawer: React.FC = () => {
     matchId
   );
 
-  const isMatchInPastWeek = relevantMatch ? isPastWeek(relevantMatch.week) : false;
+  const writeLock = matchWriteLock(relevantMatch);
+  const canWriteReview = writeLock === 'none';
 
   const team =
     relevantMatch?.homeTeam.id === selectedManager.teamId
@@ -101,12 +102,16 @@ export const ManagerReviewDrawer: React.FC = () => {
     team.id !== userProfile.favoriteTeamId;
 
   const doSubmitReview = () => {
-    if (isMatchInPastWeek) {
-      alert('Geçmiş haftaların maçları için yeni değerlendirme yapılamaz.');
+    if (!canWriteReview) {
+      alert('Oynanmamış maçlar için yorum yazılamaz. Maç başladıktan sonra yazabilirsiniz.');
       return;
     }
 
-    const reviewComment = noComment ? '' : commentInput.trim();
+    const reviewComment = isOpponentManager || !noComment ? commentInput.trim() : '';
+    if (isOpponentManager && !reviewComment) {
+      alert('Rakip takım teknik direktörüne yalnızca yorum yazabilirsiniz.');
+      return;
+    }
 
     addReview({
       matchId: matchId,
@@ -117,12 +122,11 @@ export const ManagerReviewDrawer: React.FC = () => {
       playerNumber: 0,
       teamId: team.id,
       teamName: team.name,
-      rating: ratingInput,
+      rating: isOpponentManager ? undefined : ratingInput,
       comment: reviewComment,
       authorName: userProfile.nickname || userProfile.name || 'Futbolsever',
       authorAvatar: userProfile.avatar || '⚽',
-      fanOf: userProfile.favoriteTeamName || team.name,
-      userTeamId: userProfile.favoriteTeamId || 'general',
+      authorFanOf: userProfile.favoriteTeamName || team.name,
       tags: [], // STRICT REQUIREMENT: NO TAGS for managers
     });
 
@@ -134,9 +138,6 @@ export const ManagerReviewDrawer: React.FC = () => {
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isOpponentManager) {
-      return;
-    }
     if (!requireAuth(() => doSubmitReview())) {
       return;
     }
@@ -146,8 +147,8 @@ export const ManagerReviewDrawer: React.FC = () => {
   const sortedReviews = [...managerReviews].sort((a, b) => {
     if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0);
     if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortBy === 'highest') return b.rating - a.rating;
-    if (sortBy === 'lowest') return a.rating - b.rating;
+    if (sortBy === 'highest') return (b.rating ?? -1) - (a.rating ?? -1);
+    if (sortBy === 'lowest') return (a.rating ?? 99) - (b.rating ?? 99);
     return 0;
   });
 
@@ -258,38 +259,40 @@ export const ManagerReviewDrawer: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {/* Opponent Lock Alert */}
-          {isOpponentManager && (
+          {isOpponentManager && canWriteReview && (
             <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-3">
               <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="font-bold block text-amber-300">Taraftar Takım Koruması</strong>
-                Profilinizde desteklediğiniz takım <span className="font-bold text-white">{userProfile.favoriteTeamName}</span> olarak ayarlı. Yalnızca kendi takımınızın teknik direktörünü ve oyuncularını puanlayabilirsiniz.
+                <strong className="font-bold block text-amber-300">Puan kapalı, yorum açık</strong>
+                {userProfile.favoriteTeamName} taraftarı olarak bu teknik direktöre not veremezsiniz; maç başladıysa yorum yazabilirsiniz.
               </div>
             </div>
           )}
 
-          {/* Past Week Lock Alert */}
-          {isMatchInPastWeek && (
+          {!canWriteReview && (
             <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 text-xs flex items-center gap-3">
               <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Geçmiş haftaların maçları kilitlidir. Yalnızca mevcut ve canlı maçlara puan verilebilir.</span>
+              <span>Oynanmamış maçlar kilitlidir. Maç başladıktan sonra yorum yazabilirsiniz.</span>
             </div>
           )}
 
-          {/* Rating Submission Form */}
-          {!isOpponentManager && !isMatchInPastWeek && (
+          {canWriteReview && (
             <form onSubmit={handleSubmitReview} className="bg-slate-850 p-5 rounded-2xl border border-slate-700/80 space-y-4 shadow-lg">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-sm text-white flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-amber-400" />
-                  Teknik Direktörü Puanla & Taktiksel Yorum Yap
+                  {isOpponentManager ? 'Teknik Direktöre Yorum Yaz' : 'Teknik Direktörü Puanla & Taktiksel Yorum Yap'}
                 </h3>
+                {!isOpponentManager && (
                 <span className="text-xs text-amber-400 font-mono font-bold bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
                   {ratingInput.toFixed(1)} Puan
                 </span>
+                )}
               </div>
 
               {/* Slider for rating */}
+              {!isOpponentManager && (
+              <>
               <div className="space-y-2">
                 <input
                   id="manager-rating-slider"
@@ -326,6 +329,8 @@ export const ManagerReviewDrawer: React.FC = () => {
                   </button>
                 ))}
               </div>
+              </>
+              )}
 
               {/* Comment Input */}
               <div className="space-y-2">
@@ -334,6 +339,7 @@ export const ManagerReviewDrawer: React.FC = () => {
                     <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
                     Taktiksel Değerlendirme & Yorum
                   </label>
+                  {!isOpponentManager && (
                   <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -343,9 +349,10 @@ export const ManagerReviewDrawer: React.FC = () => {
                     />
                     <span>Yorumsuz sadece puan ver</span>
                   </label>
+                  )}
                 </div>
 
-                {!noComment && (
+                {(isOpponentManager || !noComment) && (
                   <textarea
                     id="manager-comment-textarea"
                     rows={3}
@@ -370,13 +377,13 @@ export const ManagerReviewDrawer: React.FC = () => {
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
-                <span>Değerlendirmeyi Gönder ({ratingInput.toFixed(1)} Puan)</span>
+                <span>{isOpponentManager ? 'Yorumu Gönder' : `Değerlendirmeyi Gönder (${ratingInput.toFixed(1)} Puan)`}</span>
               </button>
 
               {isSubmittedSuccess && (
                 <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-fade-in font-medium">
                   <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Puanınız ve yorumunuz başarıyla kaydedildi!
+                  {isOpponentManager ? 'Yorumunuz kaydedildi!' : 'Puanınız ve yorumunuz başarıyla kaydedildi!'}
                 </div>
               )}
             </form>
@@ -471,7 +478,7 @@ export const ManagerReviewDrawer: React.FC = () => {
 
                       <div className="flex items-center gap-1 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-lg text-amber-400 font-bold text-xs">
                         <Star className="w-3 h-3 fill-amber-400" />
-                        <span>{review.rating.toFixed(1)}</span>
+                        <span>{typeof review.rating === 'number' ? review.rating.toFixed(1) : 'Yorum'}</span>
                       </div>
                     </div>
 

@@ -39,6 +39,7 @@ interface PlayerWeekData {
   voteCount: number;
   commentsCount: number;
   userRating?: number;
+  hasUserReview?: boolean;
   motmVotes: number;
   stats: Player['stats'];
 }
@@ -80,6 +81,8 @@ export const AllWeeksPlayerRatingsView: React.FC = () => {
     openPlayerModal,
     getPlayerAverageRating,
     getPlayerCommentCount,
+    canWriteMatchReview,
+    canRateTeam,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,6 +147,7 @@ export const AllWeeksPlayerRatingsView: React.FC = () => {
             voteCount: count,
             commentsCount,
             userRating: userRev ? userRev.rating : undefined,
+            hasUserReview: Boolean(userRev),
             motmVotes: p.motmVotes || 0,
             stats: p.stats,
           };
@@ -1020,7 +1024,17 @@ export const AllWeeksPlayerRatingsView: React.FC = () => {
                             className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer"
                           >
                             <Star className="w-3.5 h-3.5 fill-slate-950" />
-                            <span>{weekData.userRating ? 'Notunu Güncelle' : 'Bu Haftayı Puanla'}</span>
+                            <span>
+                              {canWriteMatchReview(weekData.match)
+                                ? canRateTeam(weekData.player.teamId)
+                                  ? weekData.userRating != null
+                                    ? 'Notunu Güncelle'
+                                    : 'Bu Haftayı Puanla'
+                                  : weekData.hasUserReview
+                                    ? 'Yorumunu Güncelle'
+                                    : 'Yorum Yaz'
+                                : 'İncele'}
+                            </span>
                           </button>
 
                           <button

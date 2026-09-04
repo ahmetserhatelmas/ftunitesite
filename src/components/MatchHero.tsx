@@ -13,13 +13,13 @@ export const MatchHero: React.FC = () => {
     positionFilter,
     setPositionFilter,
     reviews,
-    isPastWeek,
+    matchWriteLock,
   } = useApp();
 
   if (!selectedMatch) return null;
 
   const totalReviews = reviews.filter((r) => r.matchId === selectedMatch.id).length;
-  const isMatchInPastWeek = isPastWeek(selectedMatch.week);
+  const writeLock = matchWriteLock(selectedMatch);
   const isLive = selectedMatch.status === 'LIVE';
   const liveMin = selectedMatch.minute ?? 78;
   const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
@@ -65,10 +65,10 @@ export const MatchHero: React.FC = () => {
                 <span>Karşılaşma Devam Ediyor</span>
               </span>
             )}
-            {isMatchInPastWeek && (
-              <span className="text-amber-800 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 text-[11px]">
-                <Lock className="w-3 h-3 text-amber-600" />
-                <span>Geçmiş Hafta (Kilitli)</span>
+            {writeLock === 'unplayed' && (
+              <span className="text-sky-800 font-bold bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 flex items-center gap-1 text-[11px]">
+                <Lock className="w-3 h-3 text-sky-600" />
+                <span>Oynanmadı (Kilitli)</span>
               </span>
             )}
           </div>

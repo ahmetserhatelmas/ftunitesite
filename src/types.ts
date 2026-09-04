@@ -90,7 +90,7 @@ export interface PlayerReview {
   authorAvatar?: string;
   authorTeamBadge?: string;
   authorFanOf?: string;
-  rating: number; // 1.0 - 10.0
+  rating?: number; // 1.0 - 10.0; yoksa yalnızca yorum
   comment: string;
   tags: string[]; // tag labels or ids (always empty for managers!)
   createdAt: string;

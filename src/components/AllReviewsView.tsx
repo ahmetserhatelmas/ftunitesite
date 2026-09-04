@@ -109,8 +109,9 @@ export const AllReviewsView: React.FC = () => {
 
   // Key Statistics
   const totalReviewsCount = enrichedReviews.length;
-  const avgRating = totalReviewsCount > 0
-    ? (enrichedReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviewsCount).toFixed(1)
+  const scoredReviews = enrichedReviews.filter((r) => typeof r.rating === 'number' && r.rating > 0);
+  const avgRating = scoredReviews.length > 0
+    ? (scoredReviews.reduce((acc, r) => acc + (r.rating || 0), 0) / scoredReviews.length).toFixed(1)
     : '0.0';
   const totalLikes = enrichedReviews.reduce((acc, r) => acc + (r.likes || 0), 0);
 
@@ -602,7 +603,9 @@ export const AllReviewsView: React.FC = () => {
                     {/* Star Rating Badge */}
                     <div
                       className={`flex items-center gap-1 px-3 py-1 rounded-2xl font-mono font-black text-sm shrink-0 shadow-xs border ${
-                        review.rating >= 9.0
+                        typeof review.rating !== 'number'
+                          ? 'bg-sky-50 text-sky-800 border-sky-200'
+                          : review.rating >= 9.0
                           ? 'bg-amber-400 text-slate-950 border-amber-300'
                           : review.rating >= 7.5
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -611,8 +614,8 @@ export const AllReviewsView: React.FC = () => {
                           : 'bg-rose-50 text-rose-800 border-rose-200'
                       }`}
                     >
-                      <Star className={`w-4 h-4 ${review.rating >= 9.0 ? 'fill-slate-950' : 'fill-amber-400 text-amber-500'}`} />
-                      <span>{review.rating.toFixed(1)}</span>
+                      <Star className={`w-4 h-4 ${typeof review.rating === 'number' && review.rating >= 9.0 ? 'fill-slate-950' : 'fill-amber-400 text-amber-500'}`} />
+                      <span>{typeof review.rating === 'number' ? review.rating.toFixed(1) : 'Yorum'}</span>
                     </div>
 
                   </div>

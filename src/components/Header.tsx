@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trophy, Calendar, Search, Star, MessageSquare, ChevronLeft, ChevronRight, Shield, Crown, LayoutGrid, RefreshCw, Radio, CheckCircle2, User, UserPlus, Flame, TrendingUp, Briefcase } from 'lucide-react';
+import { Trophy, Calendar, Search, Star, MessageSquare, ChevronLeft, ChevronRight, Shield, Crown, LayoutGrid, RefreshCw, Radio, CheckCircle2, User, UserPlus, Flame, TrendingUp, Briefcase, Users } from 'lucide-react';
 import { SearchAutocomplete } from './SearchAutocomplete';
 
 interface HeaderProps {
@@ -31,6 +31,7 @@ export const Header: React.FC<HeaderProps> = () => {
     lastLiveSyncTime,
     liveDataSource,
     userLevelInfo,
+    registeredUserCount,
   } = useApp();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -55,16 +56,18 @@ export const Header: React.FC<HeaderProps> = () => {
       <div className="w-full max-w-[1760px] mx-auto px-2.5 sm:px-5 lg:px-7 min-w-0">
         
         {/* Main top bar - Brand, Search & Quick Status */}
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center justify-between h-16 sm:h-[4.5rem] gap-2 sm:gap-3 min-w-0">
           
           {/* Logo & Brand */}
           <div 
             className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
             onClick={() => setActiveView('pitch')}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md ring-2 ring-emerald-500 group-hover:scale-105 transition shrink-0">
-              <span className="text-sm sm:text-base tracking-tighter">FU</span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="Futbol Unite"
+              className="w-12 h-12 sm:w-16 sm:h-16 object-contain shrink-0 bg-transparent drop-shadow-md group-hover:scale-105 transition"
+            />
             <div className="hidden min-[420px]:block">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-sm sm:text-xl tracking-tight text-white group-hover:text-amber-300 transition whitespace-nowrap">
@@ -291,7 +294,18 @@ export const Header: React.FC<HeaderProps> = () => {
             )}
           </div>
 
-          {/* Live Stream Status info */}
+            {registeredUserCount != null && (
+              <span
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-black bg-emerald-950/70 text-amber-200 border border-emerald-500/50 whitespace-nowrap"
+                title="Kayıtlı kullanıcı sayısı"
+              >
+                <Users className="w-3.5 h-3.5 text-amber-300" />
+                <span>{registeredUserCount.toLocaleString('tr-TR')}</span>
+                <span className="hidden sm:inline">Kullanıcı</span>
+              </span>
+            )}
+
+            {/* Live Stream Status info */}
           <div className="hidden lg:flex items-center gap-2 text-xs text-emerald-200 font-medium shrink-0" title={`Canlı Veri Kaynağı: ${liveDataSource}`}>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-[11px] font-bold text-white bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-md">

@@ -22,7 +22,7 @@ import { QuickRegisterModal } from './components/QuickRegisterModal';
 import { FloatingLeagueStandings } from './components/FloatingLeagueStandings';
 
 function MainAppContent() {
-  const { activeView } = useApp();
+  const { activeView, registeredUserCount } = useApp();
 
   return (
     <div className="min-h-screen max-w-[100vw] overflow-x-hidden bg-slate-50 text-slate-800 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
@@ -72,14 +72,18 @@ function MainAppContent() {
       <footer className="border-t border-emerald-100 bg-white py-5 px-4 text-xs text-slate-500 shadow-inner">
         <div className="w-full max-w-[1760px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0">
-              FU
-            </div>
+            <img src="/logo.png" alt="Futbol Unite" className="w-10 h-10 object-contain shrink-0 bg-transparent" />
             <span className="font-black text-slate-800 tracking-tight shrink-0">FUTBOL UNITE</span>
             <span className="hidden md:inline">—</span>
             <span className="hidden md:inline font-medium text-slate-600">Trendyol Süper Lig Canlı Futbolcu Performans & Taraftar Yorum Platformu</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-600">
+            {registeredUserCount != null && (
+              <span className="flex items-center gap-1 text-emerald-800">
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                {registeredUserCount.toLocaleString('tr-TR')} kayıtlı kullanıcı
+              </span>
+            )}
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Sistem Aktif</span>
             <span className="hidden sm:inline">👔 Teknik Direktörler</span>
             <span className="hidden sm:inline">🔥 Tüm Yorumlar Akışı</span>

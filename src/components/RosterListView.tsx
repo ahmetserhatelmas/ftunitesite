@@ -17,9 +17,13 @@ export const RosterListView: React.FC = () => {
     getPlayerCommentCount,
     getManagerAverageRating,
     getManagerCommentCount,
+    canWriteMatchReview,
+    canRateTeam,
   } = useApp();
 
   if (!selectedMatch) return null;
+
+  const canWrite = canWriteMatchReview(selectedMatch);
 
   const allMatchPlayers = [...selectedMatch.homePlayers, ...selectedMatch.awayPlayers];
 
@@ -222,7 +226,7 @@ export const RosterListView: React.FC = () => {
                         {commentsCount} Yorum
                       </span>
                       <span className="flex items-center gap-1 text-[11px] font-black text-emerald-600 group-hover:text-emerald-700 transition">
-                        <span>Puanla & Yorumla</span>
+                        <span>{canWrite ? (canRateTeam(player.teamId) ? 'Puanla & Yorumla' : 'Yorumla') : 'İncele'}</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </span>
                     </div>

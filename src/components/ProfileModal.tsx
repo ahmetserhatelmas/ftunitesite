@@ -97,9 +97,10 @@ export const ProfileModal: React.FC = () => {
 
   const userReviews = getUserReviews();
   const totalReviewsCount = userReviews.length;
+  const scoredUserReviews = userReviews.filter((r) => typeof r.rating === 'number' && r.rating > 0);
   const avgRatingGiven =
-    totalReviewsCount > 0
-      ? userReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviewsCount
+    scoredUserReviews.length > 0
+      ? scoredUserReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / scoredUserReviews.length
       : 0;
   const totalLikesReceived = userReviews.reduce((sum, r) => sum + (r.likes || 0), 0);
 
@@ -1250,7 +1251,7 @@ export const ProfileModal: React.FC = () => {
                             <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl shadow-xs">
                               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                               <span className="font-mono font-black text-xs text-slate-900">
-                                {review.rating.toFixed(1)}
+                                {typeof review.rating === 'number' ? review.rating.toFixed(1) : 'Yorum'}
                               </span>
                             </div>
 

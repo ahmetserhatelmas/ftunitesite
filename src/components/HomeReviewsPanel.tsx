@@ -372,7 +372,7 @@ export const HomeReviewsPanel: React.FC = () => {
                       }`}
                     >
                       <Star className={`w-3.5 h-3.5 ${review.rating >= 9.0 ? 'fill-slate-950' : 'fill-amber-400 text-amber-500'}`} />
-                      <span>{review.rating.toFixed(1)}</span>
+                      <span>{typeof review.rating === 'number' ? review.rating.toFixed(1) : 'Yorum'}</span>
                     </div>
                   </div>
 

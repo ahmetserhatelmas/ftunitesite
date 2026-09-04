@@ -318,7 +318,7 @@ export const MatchSidePanel: React.FC = () => {
                           )}
                           <span className="bg-amber-400 text-slate-950 font-mono font-black text-[10px] px-1.5 py-0.5 rounded-lg flex items-center gap-0.5 shadow-xs">
                             <Star className="w-2.5 h-2.5 fill-slate-950" />
-                            {rev.rating.toFixed(1)}
+                            {typeof rev.rating === 'number' ? rev.rating.toFixed(1) : 'Yorum'}
                           </span>
                         </div>
                       </div>
