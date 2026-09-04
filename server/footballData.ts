@@ -1,6 +1,7 @@
 import { Match, Team, Player } from '../src/types';
 import { INITIAL_MATCHES } from '../src/data/mockData';
 import { SUPERLIG_CLUBS, getSquadForTeam } from '../src/data/superLigSquads';
+import { formatMatchKickoff } from '../src/lib/matchTime';
 
 const DEFAULT_API_KEY = 'fd_98b7e370b21f5b242b973d547a0f02b00126895cae178934';
 const BASE_URL = 'https://api.football-data.org/v4';
@@ -232,14 +233,7 @@ export function transformFootballDataMatches(
       formation: awayKnownClub?.formation || matchedExisting?.awayTeam.formation || '4-3-3',
     };
 
-    const dateObj = new Date(am.utcDate);
-    const formattedDate = dateObj.toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const formattedDate = formatMatchKickoff(am.utcDate);
 
     const refereeName = am.referees?.[0]?.name || matchedExisting?.referee || 'Süper Lig Hakemi';
 
@@ -259,6 +253,7 @@ export function transformFootballDataMatches(
       leagueName: 'Trendyol Süper Lig',
       week: am.matchday || matchedExisting?.week || 3,
       date: formattedDate,
+      kickoffAt: am.utcDate,
       stadium: matchedExisting?.stadium || `${homeTeam.name} Stadyumu`,
       referee: refereeName,
       status: mapMatchStatus(am.status),

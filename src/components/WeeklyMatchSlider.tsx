@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Match } from '../types';
 import { MessageSquare, MapPin, Award } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
+import { formatMatchKickoff } from '../lib/matchTime';
 
 const TR_MONTHS: Record<string, number> = {
   ocak: 0,
@@ -211,7 +212,7 @@ export const WeeklyMatchSlider: React.FC = () => {
               <div className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
                 isSelected ? 'border-emerald-500/50 text-emerald-100' : 'border-slate-100 text-slate-500'
               }`}>
-                <span className="truncate font-medium min-w-0 pr-2">{match.date}</span>
+                <span className="truncate font-medium min-w-0 pr-2">{formatMatchKickoff(match.kickoffAt, match.date)}</span>
                 <div className="flex items-center gap-2">
                   <span className={`flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full ${
                     isSelected

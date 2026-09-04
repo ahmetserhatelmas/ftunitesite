@@ -2,6 +2,7 @@ import { League, Manager, Match, MatchEvent, Player, PlayerStats, PositionCatego
 import { StandingTeam } from '../src/data/superLigStandings';
 import { fallbackPositionLabel, placeStartingXi } from '../src/lib/lineupLayout';
 import { parseRoundWeek, resolveClubStyle } from './teamCatalog';
+import { formatMatchKickoff } from '../src/lib/matchTime';
 
 const EMPTY_STATS: PlayerStats = {
   minutesPlayed: 0,
@@ -26,14 +27,7 @@ function mapStatus(short?: string): Match['status'] {
 }
 
 function formatMatchDate(iso?: string): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatMatchKickoff(iso);
 }
 
 function shortNameFrom(fullName: string): string {

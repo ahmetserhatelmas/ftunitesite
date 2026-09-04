@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Player, Match } from '../types';
 import { FootballJersey } from './FootballJersey';
 import { TeamLogo } from './TeamLogo';
+import { formatMatchKickoff } from '../lib/matchTime';
 import {
   TrendingUp,
   Star,
@@ -953,7 +954,7 @@ export const AllWeeksPlayerRatingsView: React.FC = () => {
                               {weekData.week}. HAFTA
                             </span>
                             <span className="text-xs font-bold text-slate-600">
-                              {match.date}
+                              {formatMatchKickoff(match.kickoffAt, match.date)}
                             </span>
                           </div>
 
