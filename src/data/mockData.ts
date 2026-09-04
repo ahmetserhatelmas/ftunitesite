@@ -1,0 +1,638 @@
+import { League, Match, PlayerReview } from '../types';
+import { SUPERLIG_CLUBS, getSquadForTeam } from './superLigSquads';
+
+export const LEAGUES: League[] = [
+  {
+    id: 'super-lig',
+    name: 'Trendyol Süper Lig (2025/2026)',
+    country: 'Türkiye',
+    logo: '🇹🇷',
+    currentWeek: 3,
+    totalWeeks: 38,
+  },
+];
+
+// Helper to assemble a match with complete 11-player squads on both sides
+function createSuperLigMatch(config: {
+  id: string;
+  week: number;
+  date: string;
+  stadium: string;
+  referee: string;
+  status: 'FT' | 'LIVE' | 'UPCOMING';
+  minute?: number | string;
+  liveSeconds?: number;
+  homeId: string;
+  awayId: string;
+  homeScore: number;
+  awayScore: number;
+  events?: Match['events'];
+  viewsCount?: number;
+}): Match {
+  const homeClub = SUPERLIG_CLUBS[config.homeId] || {
+    id: config.homeId,
+    name: config.homeId.toUpperCase(),
+    shortName: config.homeId.toUpperCase(),
+    logo: '⚽',
+    primaryColor: '#047857',
+    secondaryColor: '#FFFFFF',
+    formation: '4-2-3-1',
+  };
+
+  const awayClub = SUPERLIG_CLUBS[config.awayId] || {
+    id: config.awayId,
+    name: config.awayId.toUpperCase(),
+    shortName: config.awayId.toUpperCase(),
+    logo: '⚽',
+    primaryColor: '#1e3a8a',
+    secondaryColor: '#FFFFFF',
+    formation: '4-3-3',
+  };
+
+  const homeSquad = getSquadForTeam(config.homeId, true);
+  const awaySquad = getSquadForTeam(config.awayId, false);
+
+  return {
+    id: config.id,
+    leagueId: 'super-lig',
+    leagueName: 'Trendyol Süper Lig',
+    week: config.week,
+    date: config.date,
+    stadium: config.stadium,
+    referee: config.referee,
+    status: config.status,
+    minute: config.minute,
+    liveSeconds: config.liveSeconds ?? (config.status === 'LIVE' ? 24 : 0),
+    homeTeam: homeClub,
+    awayTeam: awayClub,
+    homeScore: config.homeScore,
+    awayScore: config.awayScore,
+    events: config.events || [],
+    homePlayers: [...homeSquad.starters, ...homeSquad.subs],
+    awayPlayers: [...awaySquad.starters, ...awaySquad.subs],
+    viewsCount: config.viewsCount || Math.floor(Math.random() * 2000) + 1200,
+  };
+}
+
+export const INITIAL_MATCHES: Match[] = [
+  // =========================================================================
+  // SÜPER LİG - 3. HAFTA (GÜNCEL HAFTA)
+  // =========================================================================
+  createSuperLigMatch({
+    id: 'm-sl-26-3-1',
+    week: 3,
+    date: '23 Ağustos 2026 • 21:00',
+    stadium: 'RAMS Park, İstanbul',
+    referee: 'Ozan Ergün',
+    status: 'FT',
+    homeId: 'gs',
+    awayId: 'gzt',
+    homeScore: 4,
+    awayScore: 0,
+    events: [
+      { minute: 11, type: 'goal', playerId: 'gs-45', playerName: 'Victor Osimhen', teamId: 'gs', detail: 'Kafa Vuruşu (Sara Asisti)' },
+      { minute: 28, type: 'goal', playerId: 'gs-10', playerName: 'Dries Mertens', teamId: 'gs', detail: 'Ceza Sahası Dışı Plase' },
+      { minute: 58, type: 'goal', playerId: 'gs-45', playerName: 'Victor Osimhen', teamId: 'gs', detail: 'Sert Çapraz Şut' },
+      { minute: 76, type: 'goal', playerId: 'gs-20', playerName: 'Gabriel Sara', teamId: 'gs', detail: 'Frikik Golü' },
+    ],
+    viewsCount: 5420,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-2',
+    week: 3,
+    date: '24 Ağustos 2026 • 21:45',
+    stadium: 'Çaykur Didi Stadyumu, Rize',
+    referee: 'Turgut Doman',
+    status: 'FT',
+    homeId: 'rize',
+    awayId: 'fb',
+    homeScore: 0,
+    awayScore: 5,
+    events: [
+      { minute: 15, type: 'goal', playerId: 'fb-35', playerName: 'Fred', teamId: 'fb', detail: 'Ceza Sahası Dışı Füze' },
+      { minute: 53, type: 'goal', playerId: 'fb-9', playerName: 'Edin Džeko', teamId: 'fb', detail: 'Tadić Asisti' },
+      { minute: 60, type: 'goal', playerId: 'fb-35', playerName: 'Fred', teamId: 'fb', detail: 'Sol Ayak Plase' },
+      { minute: 64, type: 'goal', playerId: 'fb-35', playerName: 'Fred', teamId: 'fb', detail: 'HAT-TRICK! (3. Gol)' },
+      { minute: 66, type: 'goal', playerId: 'fb-10', playerName: 'Dušan Tadić', teamId: 'fb', detail: 'Aşırtma Vuruş' },
+    ],
+    viewsCount: 6180,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-3',
+    week: 3,
+    date: '24 Ağustos 2026 • 21:45',
+    stadium: 'Tüpraş Stadyumu, İstanbul',
+    referee: 'Ali Şansalan',
+    status: 'FT',
+    homeId: 'bjk',
+    awayId: 'siv',
+    homeScore: 3,
+    awayScore: 1,
+    events: [
+      { minute: 27, type: 'goal', playerId: 'bjk-17', playerName: 'Ciro Immobile', teamId: 'bjk', detail: 'Penaltı Golü' },
+      { minute: 48, type: 'goal', playerId: 'siv-9', playerName: 'Rey Manaj', teamId: 'siv', detail: 'Sert Şut' },
+      { minute: 62, type: 'goal', playerId: 'bjk-17', playerName: 'Ciro Immobile', teamId: 'bjk', detail: 'Rafa Silva Asisti' },
+      { minute: 89, type: 'goal', playerId: 'bjk-83', playerName: 'Gedson Fernandes', teamId: 'bjk', detail: 'Müthiş Solo Gol' },
+    ],
+    viewsCount: 4890,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-4',
+    week: 3,
+    date: '23 Ağustos 2026 • 19:15',
+    stadium: 'Papara Park, Trabzon',
+    referee: 'Cihan Aydın',
+    status: 'FT',
+    homeId: 'ts',
+    awayId: 'sam',
+    homeScore: 2,
+    awayScore: 1,
+    events: [
+      { minute: 18, type: 'goal', playerId: 'sam-9', playerName: 'Marius Mouandilmadji', teamId: 'sam', detail: 'Kafa Vuruşu' },
+      { minute: 34, type: 'goal', playerId: 'ts-17', playerName: 'Simon Banza', teamId: 'ts', detail: 'Višća Ortası' },
+      { minute: 71, type: 'goal', playerId: 'ts-17', playerName: 'Simon Banza', teamId: 'ts', detail: 'Dönerek Vuruş' },
+    ],
+    viewsCount: 3740,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-5',
+    week: 3,
+    date: '24 Ağustos 2026 • 19:00',
+    stadium: 'Recep Tayyip Erdoğan Stadyumu, İstanbul',
+    referee: 'Zorbay Küçük',
+    status: 'FT',
+    homeId: 'eyp',
+    awayId: 'bod',
+    homeScore: 1,
+    awayScore: 0,
+    events: [
+      { minute: 67, type: 'goal', playerId: 'eyp-9', playerName: 'Mame Thiam', teamId: 'eyp', detail: 'Caner Erkin Asisti' },
+    ],
+    viewsCount: 2210,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-6',
+    week: 3,
+    date: '24 Ağustos 2026 • 20:00',
+    stadium: 'Başakşehir Fatih Terim Stadyumu',
+    referee: 'Kadir Sağlam',
+    status: 'FT',
+    homeId: 'bsk',
+    awayId: 'ant',
+    homeScore: 4,
+    awayScore: 2,
+    events: [
+      { minute: 14, type: 'goal', playerId: 'ant-9', playerName: 'Braian Samudio', teamId: 'ant', detail: 'Erken Gol' },
+      { minute: 33, type: 'goal', playerId: 'bsk-9', playerName: 'Krzysztof Piątek', teamId: 'bsk', detail: 'Ceza Sahası Karambolü' },
+      { minute: 49, type: 'goal', playerId: 'bsk-7', playerName: 'Deniz Türüç', teamId: 'bsk', detail: 'Frikik' },
+      { minute: 65, type: 'goal', playerId: 'bsk-9', playerName: 'Krzysztof Piątek', teamId: 'bsk', detail: 'Kafa Golü' },
+      { minute: 88, type: 'goal', playerId: 'bsk-10', playerName: 'Berkay Özcan', teamId: 'bsk', detail: 'Plase Şut' },
+    ],
+    viewsCount: 2450,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-7',
+    week: 3,
+    date: '24 Ağustos 2026 • 21:45',
+    stadium: 'Gürsel Aksel Stadyumu, İzmir',
+    referee: 'Atilla Karaoğlan',
+    status: 'FT',
+    homeId: 'goz',
+    awayId: 'aln',
+    homeScore: 2,
+    awayScore: 0,
+    events: [
+      { minute: 41, type: 'goal', playerId: 'goz-9', playerName: 'Rômulo Cardoso', teamId: 'goz', detail: 'Djalma Silva Ortası' },
+      { minute: 82, type: 'goal', playerId: 'goz-11', playerName: 'Juan', teamId: 'goz', detail: 'Kontra Atak Golü' },
+    ],
+    viewsCount: 3120,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-8',
+    week: 3,
+    date: '24 Ağustos 2026 • 19:15',
+    stadium: 'Kayseri Kadir Has Stadyumu',
+    referee: 'Halil Umut Meler',
+    status: 'FT',
+    homeId: 'kay',
+    awayId: 'kon',
+    homeScore: 1,
+    awayScore: 2,
+    events: [
+      { minute: 22, type: 'goal', playerId: 'kon-9', playerName: 'Blaz Kramer', teamId: 'kon', detail: 'Pedrinho Asisti' },
+      { minute: 55, type: 'goal', playerId: 'kay-9', playerName: 'Stéphane Bahoken', teamId: 'kay', detail: 'Kafa Vuruşu' },
+      { minute: 79, type: 'goal', playerId: 'kon-10', playerName: 'Pedrinho', teamId: 'kon', detail: 'Ceza Sahası Dışı Şut' },
+    ],
+    viewsCount: 2010,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-3-9',
+    week: 3,
+    date: '27 Ağustos 2026 • CANLI',
+    stadium: 'Recep Tayyip Erdoğan Stadyumu',
+    referee: 'Burak Pakkan',
+    status: 'LIVE',
+    minute: 78,
+    homeId: 'kas',
+    awayId: 'ads',
+    homeScore: 2,
+    awayScore: 2,
+    events: [
+      { minute: 19, type: 'goal', playerId: 'kas-9', playerName: 'Nuno da Costa', teamId: 'kas', detail: 'Hajradinović Asisti' },
+      { minute: 44, type: 'goal', playerId: 'ads-9', playerName: 'Salih Kavrazlı', teamId: 'ads', detail: 'Ceza Sahası İçi Vuruş' },
+      { minute: 61, type: 'goal', playerId: 'kas-6', playerName: 'Aytaç Kara', teamId: 'kas', detail: 'Sert Şut' },
+      { minute: 87, type: 'goal', playerId: 'ads-10', playerName: 'Bünyamin Balat', teamId: 'ads', detail: 'Penaltı' },
+    ],
+    viewsCount: 1950,
+  }),
+
+  // =========================================================================
+  // SÜPER LİG - 4. HAFTA (GELECEK HAFTA & DEV MAÇLAR)
+  // =========================================================================
+  createSuperLigMatch({
+    id: 'm-sl-26-4-1',
+    week: 4,
+    date: '31 Ağustos 2026 • 21:45',
+    stadium: 'Yeni Adana Stadyumu',
+    referee: 'Ali Şansalan',
+    status: 'UPCOMING',
+    homeId: 'ads',
+    awayId: 'gs',
+    homeScore: 0,
+    awayScore: 0,
+    events: [],
+    viewsCount: 4200,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-4-2',
+    week: 4,
+    date: '30 Ağustos 2026 • 21:45',
+    stadium: 'Ülker Stadyumu Şükrü Saracoğlu',
+    referee: 'Halil Umut Meler',
+    status: 'UPCOMING',
+    homeId: 'fb',
+    awayId: 'aln',
+    homeScore: 0,
+    awayScore: 0,
+    events: [],
+    viewsCount: 4900,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-4-3',
+    week: 4,
+    date: '1 Eylül 2026 • 20:00',
+    stadium: 'Papara Park, Trabzon',
+    referee: 'Atilla Karaoğlan',
+    status: 'UPCOMING',
+    homeId: 'ts',
+    awayId: 'bjk',
+    homeScore: 0,
+    awayScore: 0,
+    events: [],
+    viewsCount: 6500,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-4-4',
+    week: 4,
+    date: '31 Ağustos 2026 • 19:15',
+    stadium: 'Samsun 19 Mayıs Stadyumu',
+    referee: 'Zorbay Küçük',
+    status: 'UPCOMING',
+    homeId: 'sam',
+    awayId: 'bsk',
+    homeScore: 0,
+    awayScore: 0,
+    events: [],
+    viewsCount: 2300,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-4-5',
+    week: 4,
+    date: '30 Ağustos 2026 • 19:15',
+    stadium: 'Mersin Stadyumu',
+    referee: 'Kadir Sağlam',
+    status: 'UPCOMING',
+    homeId: 'hat',
+    awayId: 'sam',
+    homeScore: 0,
+    awayScore: 0,
+    events: [],
+    viewsCount: 1800,
+  }),
+
+  // =========================================================================
+  // SÜPER LİG - 1. HAFTA (GEÇMİŞ HAFTA)
+  // =========================================================================
+  createSuperLigMatch({
+    id: 'm-sl-26-1-1',
+    week: 1,
+    date: '9 Ağustos 2026 • 21:00',
+    stadium: 'RAMS Park, İstanbul',
+    referee: 'Turgut Doman',
+    status: 'FT',
+    homeId: 'gs',
+    awayId: 'hat',
+    homeScore: 2,
+    awayScore: 1,
+    events: [
+      { minute: 52, type: 'goal', playerId: 'hat-9', playerName: 'Vincent Aboubakar', teamId: 'hat', detail: 'Plase Gol' },
+      { minute: 80, type: 'goal', playerId: 'gs-10', playerName: 'Mauro Icardi', teamId: 'gs', detail: 'Penaltı Golü' },
+      { minute: 90, type: 'goal', playerId: 'gs-44', playerName: 'Michy Batshuayi', teamId: 'gs', detail: 'Son Dakika Kafa Golü' },
+    ],
+    viewsCount: 4500,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-1-2',
+    week: 1,
+    date: '10 Ağustos 2026 • 21:45',
+    stadium: 'Ülker Stadyumu, İstanbul',
+    referee: 'Murat Erdoğan',
+    status: 'FT',
+    homeId: 'fb',
+    awayId: 'ads',
+    homeScore: 1,
+    awayScore: 0,
+    events: [
+      { minute: 34, type: 'goal', playerId: 'fb-9', playerName: 'Edin Džeko', teamId: 'fb', detail: 'Saint-Maximin Asisti' },
+    ],
+    viewsCount: 4300,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-1-3',
+    week: 1,
+    date: '11 Ağustos 2026 • 21:45',
+    stadium: 'Samsun 19 Mayıs Stadyumu',
+    referee: 'Ali Şansalan',
+    status: 'FT',
+    homeId: 'sam',
+    awayId: 'bjk',
+    homeScore: 0,
+    awayScore: 2,
+    events: [
+      { minute: 31, type: 'goal', playerId: 'bjk-27', playerName: 'Rafa Silva', teamId: 'bjk', detail: 'Harika Aşırtma' },
+      { minute: 36, type: 'goal', playerId: 'bjk-2', playerName: 'Gabriel Paulista', teamId: 'bjk', detail: 'Kafa Vuruşu' },
+    ],
+    viewsCount: 3900,
+  }),
+
+  // =========================================================================
+  // SÜPER LİG - 2. HAFTA
+  // =========================================================================
+  createSuperLigMatch({
+    id: 'm-sl-26-2-1',
+    week: 2,
+    date: '16 Ağustos 2026 • 21:00',
+    stadium: 'Medaş Konya Büyükşehir Stadyumu',
+    referee: 'Direnç Tonusluoğlu',
+    status: 'FT',
+    homeId: 'kon',
+    awayId: 'gs',
+    homeScore: 1,
+    awayScore: 2,
+    events: [
+      { minute: 41, type: 'goal', playerId: 'gs-53', playerName: 'Barış Alper Yılmaz', teamId: 'gs', detail: 'Icardi Asisti' },
+      { minute: 45, type: 'goal', playerId: 'kon-10', playerName: 'Pedrinho', teamId: 'kon', detail: 'Ceza Sahası İçi' },
+      { minute: 59, type: 'goal', playerId: 'gs-45', playerName: 'Victor Osimhen', teamId: 'gs', detail: 'Sert Şut' },
+    ],
+    viewsCount: 4600,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-2-2',
+    week: 2,
+    date: '17 Ağustos 2026 • 21:45',
+    stadium: 'Gürsel Aksel Stadyumu, İzmir',
+    referee: 'Kadir Sağlam',
+    status: 'FT',
+    homeId: 'goz',
+    awayId: 'fb',
+    homeScore: 2,
+    awayScore: 2,
+    events: [
+      { minute: 45, type: 'goal', playerId: 'fb-9', playerName: 'Edin Džeko', teamId: 'fb', detail: 'Penaltı' },
+      { minute: 70, type: 'goal', playerId: 'fb-19', playerName: 'Youssef En-Nesyri', teamId: 'fb', detail: 'Kafa Golü' },
+      { minute: 68, type: 'goal', playerId: 'goz-9', playerName: 'Koray Günter', teamId: 'goz', detail: 'Korner Golü' },
+      { minute: 90, type: 'goal', playerId: 'goz-9', playerName: 'Rômulo Cardoso', teamId: 'goz', detail: '90+5 Son Nefes Golü' },
+    ],
+    viewsCount: 5200,
+  }),
+
+  createSuperLigMatch({
+    id: 'm-sl-26-2-3',
+    week: 2,
+    date: '18 Ağustos 2026 • 21:45',
+    stadium: 'Tüpraş Stadyumu, İstanbul',
+    referee: 'Mehmet Türkmen',
+    status: 'FT',
+    homeId: 'bjk',
+    awayId: 'ant',
+    homeScore: 4,
+    awayScore: 2,
+    events: [
+      { minute: 1, type: 'goal', playerId: 'ant-9', playerName: 'Braian Samudio', teamId: 'ant', detail: 'Şok Erken Gol' },
+      { minute: 13, type: 'goal', playerId: 'bjk-17', playerName: 'Ciro Immobile', teamId: 'bjk', detail: 'Sert Şut' },
+      { minute: 23, type: 'goal', playerId: 'bjk-17', playerName: 'Ciro Immobile', teamId: 'bjk', detail: 'Semih Asisti' },
+      { minute: 51, type: 'goal', playerId: 'ant-9', playerName: 'Braian Samudio', teamId: 'ant', detail: 'Kafa Vuruşu' },
+      { minute: 56, type: 'goal', playerId: 'bjk-27', playerName: 'Rafa Silva', teamId: 'bjk', detail: 'Plase Vuruş' },
+      { minute: 90, type: 'goal', playerId: 'bjk-28', playerName: 'Al-Musrati', teamId: 'bjk', detail: 'Köşe Vuruşu' },
+    ],
+    viewsCount: 4800,
+  }),
+];
+
+export const INITIAL_REVIEWS: PlayerReview[] = [
+  {
+    id: 'rev-user-test-1',
+    matchId: 'm-sl-26-3-1',
+    playerId: 'gs-45',
+    playerName: 'Victor Osimhen',
+    rating: 9.7,
+    comment: 'Victor Osimhen\'in 65. dakikaya kadar yaptığı ön alan presi maçı kopardı. 2. goldeki kafa vuruşu ve ceza sahası hakimiyeti tek kelimeyle kusursuzdu!',
+    authorName: 'Futbolsever (Ben)',
+    authorAvatar: '⚽',
+    authorFanOf: 'Galatasaray',
+    tags: ['⚽ Gol / Bitiricilik', '🔥 Pres & Mücadele', '👑 Maçın Adamı', '🧠 Oyun Aklı / Liderlik'],
+    createdAt: '26 Ağustos 2026, 22:30',
+    likes: 58,
+    likedByMe: true,
+    dislikes: 1,
+    isUserSubmission: true,
+    replies: [
+      {
+        id: 'rep-user-test-1-1',
+        reviewId: 'rev-user-test-1',
+        authorName: 'KadıköyBoğası',
+        authorAvatar: '🟡',
+        authorFanOf: 'Fenerbahçe',
+        comment: 'Rizespor stoperleri arkada çok boşluk bıraktı ama Osimhen\'in fizik gücü ve patlayıcılığı lig standartlarının çok üzerinde. Tebrikler.',
+        createdAt: '26 Ağustos 2026, 22:45',
+        likes: 14,
+        dislikes: 1,
+        isUserSubmission: false,
+      },
+      {
+        id: 'rep-user-test-1-2',
+        reviewId: 'rev-user-test-1',
+        authorName: 'KartalYuvasi',
+        authorAvatar: '🦅',
+        authorFanOf: 'Beşiktaş',
+        comment: 'Hava toplarındaki üstünlüğü özellikle duran toplarda çok büyük tehdit oluşturuyor. Bizim derbide defans hattı çok dikkatli olmalı.',
+        createdAt: '26 Ağustos 2026, 23:10',
+        likes: 19,
+        dislikes: 0,
+        isUserSubmission: false,
+      },
+      {
+        id: 'rep-user-test-1-3',
+        reviewId: 'rev-user-test-1',
+        authorName: 'TaktikDehası',
+        authorAvatar: '🧠',
+        authorFanOf: 'Trabzonspor',
+        comment: 'Sadece gol değil, topsuz oyunda stoperleri üzerine çekerek Barış Alper ve Mertens\'e açtığı koridorlar taktiksel açıdan maçın anahtarıydı. Çok isabetli bir analiz olmuş!',
+        createdAt: '27 Ağustos 2026, 00:05',
+        likes: 26,
+        dislikes: 0,
+        isUserSubmission: false,
+      },
+    ],
+  },
+  {
+    id: 'rev-init-1',
+    matchId: 'm-sl-26-3-1',
+    playerId: 'gs-45',
+    playerName: 'Victor Osimhen',
+    rating: 9.6,
+    comment: 'İnanılmaz bir pres gücü ve ceza sahası hakimiyeti. İkinci yarıda attığı kafa golü tam bir santrfor dersiydi!',
+    authorName: 'Tribün Lideri',
+    authorAvatar: '🦁',
+    authorFanOf: 'Galatasaray',
+    tags: ['⚽ Gol / Bitiricilik', '🔥 Pres & Mücadele', '👑 Maçın Adamı'],
+    createdAt: '25 Ağustos 2026, 23:45',
+    likes: 84,
+    dislikes: 3,
+    replies: [
+      {
+        id: 'rep-init-1-1',
+        reviewId: 'rev-init-1',
+        authorName: 'TaktikUstadı',
+        authorAvatar: '⚽',
+        authorFanOf: 'Galatasaray',
+        comment: 'Kesinlikle katılıyorum! Özellikle savunma arkasına yaptığı koşularla Rizespor stoperlerini çok yıprattı.',
+        createdAt: '26 Ağustos 2026, 00:15',
+        likes: 18,
+        dislikes: 1,
+      },
+      {
+        id: 'rep-init-1-2',
+        reviewId: 'rev-init-1',
+        authorName: 'KaradenizFırtınası',
+        authorAvatar: '🌊',
+        authorFanOf: 'Trabzonspor',
+        comment: 'Ligin en iyi forveti şu an tartışmasız. Bizim derbide nasıl durduracağız merak konusu.',
+        createdAt: '26 Ağustos 2026, 01:05',
+        likes: 12,
+        dislikes: 2,
+      },
+    ],
+  },
+  {
+    id: 'rev-init-2',
+    matchId: 'm-sl-26-3-2',
+    playerId: 'fb-10',
+    playerName: 'Dušan Tadić',
+    rating: 8.9,
+    comment: 'Oyun aklı çok başka seviyede. İki kilit pası da gole dönüştü. Tempo düştüğünde takımı sırtlayan isim.',
+    authorName: 'KadıköyBoğası',
+    authorAvatar: '🟡',
+    authorFanOf: 'Fenerbahçe',
+    tags: ['🎯 Kilit Paslar / Vizyon', '🧠 Oyun Aklı / Liderlik'],
+    createdAt: '25 Ağustos 2026, 22:30',
+    likes: 62,
+    dislikes: 4,
+    replies: [
+      {
+        id: 'rep-init-2-1',
+        reviewId: 'rev-init-2',
+        authorName: 'SarıKanarya99',
+        authorAvatar: '🦅',
+        authorFanOf: 'Fenerbahçe',
+        comment: 'Mourinho sisteminde serbest rolde oynayınca çok daha verimli oluyor.',
+        createdAt: '25 Ağustos 2026, 22:50',
+        likes: 9,
+        dislikes: 0,
+      },
+    ],
+  },
+  {
+    id: 'rev-init-3',
+    matchId: 'm-sl-26-3-3',
+    playerId: 'bjk-27',
+    playerName: 'Rafa Silva',
+    rating: 9.3,
+    comment: 'Top ayağına her geldiğinde tribünler ayağa kalkıyor. Driplingleri ve pas zamanlaması mükemmel.',
+    authorName: 'KartalYuvasi',
+    authorAvatar: '🦅',
+    authorFanOf: 'Beşiktaş',
+    tags: ['⚡ Dripling & Hız', '🎯 Kilit Paslar / Vizyon', '👑 Maçın Adamı'],
+    createdAt: '26 Ağustos 2026, 21:10',
+    likes: 71,
+    dislikes: 2,
+    replies: [
+      {
+        id: 'rep-init-3-1',
+        reviewId: 'rev-init-3',
+        authorName: 'SemtÇocuğu',
+        authorAvatar: '🏴',
+        authorFanOf: 'Beşiktaş',
+        comment: 'Gedson ile uyumları orta sahayı bambaşka bir seviyeye taşıdı.',
+        createdAt: '26 Ağustos 2026, 21:40',
+        likes: 14,
+        dislikes: 0,
+      },
+    ],
+  },
+  {
+    id: 'rev-init-4',
+    matchId: 'm-sl-26-3-1',
+    playerId: 'mgr-gs',
+    managerId: 'mgr-gs',
+    targetType: 'manager',
+    playerName: 'Okan Buruk',
+    rating: 9.2,
+    comment: 'Ön alan baskısı ve 60. dakikadan sonraki çift forvet hamlesi maçı kopardı. Taktiksel kurgusu çok netti.',
+    authorName: 'AslanPençesi',
+    authorAvatar: '🦁',
+    authorFanOf: 'Galatasaray',
+    tags: [],
+    createdAt: '25 Ağustos 2026, 23:50',
+    likes: 45,
+    dislikes: 3,
+    replies: [
+      {
+        id: 'rep-init-4-1',
+        reviewId: 'rev-init-4',
+        authorName: 'FutbolSever34',
+        authorAvatar: '⚽',
+        authorFanOf: 'Süper Lig',
+        comment: 'Oyuncu değişikliklerinin zamanlaması kusursuzdu.',
+        createdAt: '26 Ağustos 2026, 00:30',
+        likes: 11,
+        dislikes: 0,
+      },
+    ],
+  },
+];

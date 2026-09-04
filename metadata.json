@@ -1,0 +1,7 @@
+{
+  "name": "Futbol Unite - Süper Lig Futbolcu Yorum & Puanlama",
+  "description": "Trendyol Süper Lig maçlarında forma giyen oyuncular ve teknik direktörler için haftalık özel yorum, topluluk puanlaması, teknik direktör sıralaması ve performans analizi platformu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

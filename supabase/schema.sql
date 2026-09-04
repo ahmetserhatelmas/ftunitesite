@@ -1,0 +1,3 @@
+-- UYARI: Bu dosya oyun veritabanına tablo eklemez.
+-- Kart Düellosu şeması (profiles, player_inventory, match_rooms, ...) AYNEN kalır.
+-- Website için yalnızca şunu çalıştırın: supabase/web_addon.sql
