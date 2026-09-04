@@ -1,16 +1,12 @@
 import './server/env';
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { PlayerReview } from './src/types';
 import { addPersistedReview, ensureBootstrapped, getSnapshot, syncSeason, syncWeek } from './server/liveStore';
 import { getApiSportsKey, getLeagueId } from './server/apiSports';
 import { isSupabaseConfigured } from './server/supabase';
 import { envNumber } from './server/env';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -126,4 +122,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error('Sunucu başlatılamadı:', error);
+  process.exit(1);
+});
