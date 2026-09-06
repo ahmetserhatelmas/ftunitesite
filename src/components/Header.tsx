@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = () => {
       <div className="w-full max-w-[1760px] mx-auto px-2.5 sm:px-5 lg:px-7 min-w-0">
         
         {/* Main top bar - Brand, Search & Quick Status */}
-        <div className="flex items-center justify-between h-16 sm:h-[4.5rem] gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center justify-between h-14 sm:h-[4.5rem] gap-1.5 sm:gap-3 min-w-0">
           
           {/* Logo & Brand */}
           <div 
@@ -70,9 +70,9 @@ export const Header: React.FC<HeaderProps> = () => {
             <img
               src="/logo.png"
               alt="Futbol Unite"
-              className="w-12 h-12 sm:w-16 sm:h-16 object-contain shrink-0 bg-transparent drop-shadow-md group-hover:scale-105 transition"
+              className="w-10 h-10 sm:w-16 sm:h-16 object-contain shrink-0 bg-transparent drop-shadow-md group-hover:scale-105 transition"
             />
-            <div className="hidden min-[420px]:block">
+            <div className="hidden sm:block">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-sm sm:text-xl tracking-tight text-white group-hover:text-amber-300 transition whitespace-nowrap">
                   FUTBOL UNITE
@@ -91,37 +91,42 @@ export const Header: React.FC<HeaderProps> = () => {
           {/* Search Bar with Dropdown Autocomplete */}
           <SearchAutocomplete />
 
-          {/* Week Selector in top right */}
-          <div className="flex items-center gap-0.5 sm:gap-1.5 bg-emerald-950/60 p-1 rounded-xl border border-emerald-600/60 shrink-0">
-            <button
-              id="prev-week-btn"
-              onClick={handlePrevWeek}
-              disabled={selectedWeek <= 1}
-              className="p-1 rounded-lg hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-emerald-200 hover:text-white"
-              title="Önceki Hafta"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+          {/* Week + theme + refresh — compact on mobile so they never overlap search */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="flex items-center bg-emerald-950/60 p-0.5 sm:p-1 rounded-xl border border-emerald-600/60">
+              <button
+                id="prev-week-btn"
+                onClick={handlePrevWeek}
+                disabled={selectedWeek <= 1}
+                className="p-1 rounded-lg hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-emerald-200 hover:text-white"
+                title="Önceki Hafta"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-            <div className="flex items-center gap-1 px-1 sm:px-2 font-mono font-black text-[11px] sm:text-xs text-white">
-              <Calendar className="w-3.5 h-3.5 text-amber-400 hidden sm:block" />
-              <span className="whitespace-nowrap">{selectedWeek}. HAFTA</span>
+              <div className="flex items-center gap-1 px-0.5 sm:px-2 font-mono font-black text-[11px] sm:text-xs text-white">
+                <Calendar className="w-3.5 h-3.5 text-amber-400 hidden sm:block" />
+                <span className="whitespace-nowrap tabular-nums">
+                  <span className="sm:hidden">{selectedWeek}</span>
+                  <span className="hidden sm:inline">{selectedWeek}. HAFTA</span>
+                </span>
+              </div>
+
+              <button
+                id="next-week-btn"
+                onClick={handleNextWeek}
+                disabled={selectedWeek >= currentLeague.totalWeeks}
+                className="p-1 rounded-lg hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-emerald-200 hover:text-white"
+                title="Sonraki Hafta"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-
-            <button
-              id="next-week-btn"
-              onClick={handleNextWeek}
-              disabled={selectedWeek >= currentLeague.totalWeeks}
-              className="p-1 rounded-lg hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-emerald-200 hover:text-white"
-              title="Sonraki Hafta"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
             <button
               id="theme-toggle-btn"
               type="button"
               onClick={toggleTheme}
-              className="ml-0.5 p-1.5 rounded-lg bg-emerald-800/80 hover:bg-emerald-700 text-amber-200 border border-emerald-500/50 transition"
+              className="p-1.5 rounded-lg bg-emerald-800/80 hover:bg-emerald-700 text-amber-200 border border-emerald-500/50 transition"
               title={theme === 'dark' ? 'Açık moda geç' : 'Koyu moda geç'}
               aria-label={theme === 'dark' ? 'Açık moda geç' : 'Koyu moda geç'}
             >
@@ -131,7 +136,7 @@ export const Header: React.FC<HeaderProps> = () => {
               id="refresh-live-data-btn"
               onClick={() => void refreshLiveData()}
               disabled={isLiveSyncing}
-              className="flex items-center gap-1 ml-0.5 px-2 py-1 rounded-lg bg-amber-400/95 hover:bg-amber-300 disabled:opacity-60 text-slate-950 font-black text-[10px] sm:text-[11px] transition"
+              className="flex items-center justify-center gap-1 p-1.5 sm:px-2 sm:py-1 rounded-lg bg-amber-400/95 hover:bg-amber-300 disabled:opacity-60 text-slate-950 font-black text-[10px] sm:text-[11px] transition"
               title="Skor ve yorumları yenile — bulunduğun sayfada kalır"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLiveSyncing ? 'animate-spin' : ''}`} />

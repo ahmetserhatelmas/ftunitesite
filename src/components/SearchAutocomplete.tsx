@@ -325,10 +325,10 @@ export const SearchAutocomplete: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="flex-1 min-w-0 max-w-lg sm:mx-4 relative">
+    <div ref={containerRef} className="flex-1 min-w-0 max-w-lg overflow-hidden sm:mx-4 relative">
       {/* Search Input Box */}
       <div className="relative">
-        <Search className="w-4 h-4 text-emerald-200 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-4 h-4 text-emerald-200 absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           ref={inputRef}
           id="desktop-search-input"
@@ -342,7 +342,7 @@ export const SearchAutocomplete: React.FC = () => {
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Oyuncu veya takım ara..."
-          className="w-full min-w-0 bg-emerald-700/60 hover:bg-emerald-700/80 focus:bg-white focus:text-slate-900 border border-emerald-500/80 focus:border-white rounded-full pl-9 sm:pl-10 pr-9 py-1.5 text-xs text-white placeholder-emerald-200 focus:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition shadow-inner"
+          className="w-full min-w-0 max-w-full bg-emerald-700/60 hover:bg-emerald-700/80 focus:bg-white focus:text-slate-900 border border-emerald-500/80 focus:border-white rounded-full pl-8 sm:pl-10 pr-8 sm:pr-9 py-1.5 text-xs text-white placeholder-emerald-200 focus:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition shadow-inner"
         />
 
         {searchQuery && (
