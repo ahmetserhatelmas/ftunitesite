@@ -18,7 +18,7 @@ import {
 } from './supabase';
 import { buildLeague, transformFixture, transformStandings } from './transform';
 import { parseRoundWeek } from './teamCatalog';
-import { deriveActiveWeek, hasKickoffStarted, isMatchLive } from '../src/lib/matchTime';
+import { deriveActiveWeek, hasKickoffStarted, isMatchLive, matchNeedsScoreRefresh } from '../src/lib/matchTime';
 
 interface LiveSnapshot {
   matches: Match[];
@@ -63,12 +63,19 @@ function mergeMatches(incoming: Match[]): void {
     }
     const incomingDepth = match.homePlayers.length + match.awayPlayers.length + match.events.length;
     const previousDepth = previous.homePlayers.length + previous.awayPlayers.length + previous.events.length;
+    const incomingThin = incomingDepth === 0;
+    const incomingBlankScore = (match.homeScore ?? 0) === 0 && (match.awayScore ?? 0) === 0;
+    const keepPreviousScore =
+      incomingThin &&
+      incomingBlankScore &&
+      (previous.status === 'LIVE' || previous.status === 'FT');
+    const useIncomingEvents = match.events.length > 0 || match.homePlayers.length >= 11;
     const body = incomingDepth >= previousDepth ? match : {
       ...previous,
       ...match,
       homePlayers: previous.homePlayers.length ? previous.homePlayers : match.homePlayers,
       awayPlayers: previous.awayPlayers.length ? previous.awayPlayers : match.awayPlayers,
-      events: previous.events.length ? previous.events : match.events,
+      events: useIncomingEvents ? match.events : (previous.events.length ? previous.events : match.events),
     };
     const kickoffAt = match.kickoffAt || previous.kickoffAt;
     const richerStatus = statusRank(previous.status) >= statusRank(match.status) ? previous.status : match.status;
@@ -82,8 +89,8 @@ function mergeMatches(incoming: Match[]): void {
       ...body,
       kickoffAt,
       status,
-      homeScore: Math.max(previous.homeScore ?? 0, match.homeScore ?? 0),
-      awayScore: Math.max(previous.awayScore ?? 0, match.awayScore ?? 0),
+      homeScore: keepPreviousScore ? previous.homeScore : (match.homeScore ?? 0),
+      awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
       minute: status === 'LIVE' ? (match.minute ?? previous.minute ?? 1) : (match.minute ?? previous.minute),
       liveSeconds: match.liveSeconds ?? previous.liveSeconds,
     });
@@ -171,8 +178,18 @@ export async function syncSeason(force = false): Promise<LiveSnapshot> {
     saveMatches(season, store.matches),
     saveStandings(season, currentWeek, store.standings),
   ]);
+  await refreshStoreReviews();
 
   return getSnapshot();
+}
+
+async function refreshStoreReviews(): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const rows = await loadReviews();
+  if (!rows.length) return;
+  const map = new Map(store.reviews.map((review) => [review.id, review]));
+  for (const row of rows) map.set(row.id, row);
+  store.reviews = [...map.values()];
 }
 
 export async function syncWeek(week: number): Promise<LiveSnapshot> {
@@ -180,6 +197,7 @@ export async function syncWeek(week: number): Promise<LiveSnapshot> {
     await syncSeason();
   }
   await hydrateWeek(week);
+  await refreshStoreReviews();
   return getSnapshot();
 }
 
@@ -193,11 +211,7 @@ export function ensureBootstrapped(): Promise<void> {
 }
 
 function needsLiveRefresh(): boolean {
-  return store.matches.some((match) => {
-    if (match.status === 'LIVE') return true;
-    if (match.status === 'FT') return false;
-    return hasKickoffStarted(match.kickoffAt, -60_000) || hasKickoffStarted(match.date, -60_000);
-  });
+  return store.matches.some((match) => matchNeedsScoreRefresh(match));
 }
 
 let livePollerStarted = false;

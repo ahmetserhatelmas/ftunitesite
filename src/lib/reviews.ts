@@ -31,33 +31,53 @@ export function stampReviewOwnership(
   };
 }
 
+function combineReview(
+  incoming: PlayerReview,
+  existing?: PlayerReview,
+  profile?: Pick<UserProfile, 'id' | 'name' | 'nickname' | 'isRegistered'> | null,
+): PlayerReview {
+  const combined: PlayerReview = {
+    ...existing,
+    ...incoming,
+    authorUserId: incoming.authorUserId || existing?.authorUserId,
+    likedByMe: existing?.likedByMe,
+    dislikedByMe: existing?.dislikedByMe,
+    isReportedByMe: existing?.isReportedByMe,
+    replies: incoming.replies ?? existing?.replies,
+  };
+  if (existing?.isUserSubmission && !combined.authorUserId) {
+    combined.isUserSubmission = existing.isUserSubmission;
+  }
+  return stampReviewOwnership(combined, profile);
+}
+
+/** Eski listeyi silmeden birleştirir — senkron diğerlerinin yorumunu silmesin. */
 export function mergeReviewLists(
   previous: PlayerReview[],
   incoming: PlayerReview[],
   profile?: Pick<UserProfile, 'id' | 'name' | 'nickname' | 'isRegistered'> | null,
 ): PlayerReview[] {
-  const incomingIds = new Set(incoming.map((review) => review.id));
-  const prevById = new Map(previous.map((review) => [review.id, review]));
+  const map = new Map<string, PlayerReview>();
+  for (const review of previous) {
+    map.set(review.id, stampReviewOwnership(review, profile));
+  }
+  for (const review of incoming) {
+    map.set(review.id, combineReview(review, map.get(review.id), profile));
+  }
+  return [...map.values()];
+}
 
-  const merged = incoming.map((review) => {
-    const existing = prevById.get(review.id);
-    const combined: PlayerReview = {
-      ...review,
-      authorUserId: review.authorUserId || existing?.authorUserId,
-      likedByMe: existing?.likedByMe,
-      dislikedByMe: existing?.dislikedByMe,
-      isReportedByMe: existing?.isReportedByMe,
-      replies: review.replies ?? existing?.replies,
-    };
-    if (existing?.isUserSubmission && !combined.authorUserId) {
-      combined.isUserSubmission = existing.isUserSubmission;
-    }
-    return stampReviewOwnership(combined, profile);
+/** Bulut asıl kaynak; henüz yazılmamış kendi yorumunu korur. */
+export function replaceReviewsFromCloud(
+  previous: PlayerReview[],
+  cloud: PlayerReview[],
+  profile?: Pick<UserProfile, 'id' | 'name' | 'nickname' | 'isRegistered'> | null,
+): PlayerReview[] {
+  const cloudIds = new Set(cloud.map((review) => review.id));
+  const localOnly = previous.filter((review) => !cloudIds.has(review.id) && isOwnReview(review, profile));
+  const fromCloud = cloud.map((review) => {
+    const existing = previous.find((item) => item.id === review.id);
+    return combineReview(review, existing, profile);
   });
-
-  const localOnly = previous.filter(
-    (review) => !incomingIds.has(review.id) && isOwnReview(review, profile),
-  );
-
-  return [...localOnly, ...merged];
+  return [...localOnly, ...fromCloud];
 }

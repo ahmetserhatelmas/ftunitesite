@@ -149,9 +149,24 @@ function buildPlayers(
   ];
 }
 
-function mapEventType(type?: string, detail?: string): MatchEvent['type'] | null {
+function isCancelledGoal(type?: string, detail?: string, comments?: string): boolean {
+  const blob = `${type || ''} ${detail || ''} ${comments || ''}`.toLowerCase();
+  return (
+    blob.includes('disallow') ||
+    blob.includes('cancelled') ||
+    blob.includes('canceled') ||
+    blob.includes('goal cancelled') ||
+    blob.includes('goal canceled') ||
+    (blob.includes('var') && blob.includes('goal') && (blob.includes('cancel') || blob.includes('disallow'))) ||
+    blob.includes('iptal')
+  );
+}
+
+function mapEventType(type?: string, detail?: string, comments?: string): MatchEvent['type'] | null {
+  if (isCancelledGoal(type, detail, comments)) return null;
   const t = (type || '').toLowerCase();
   const d = (detail || '').toLowerCase();
+  if (t === 'var') return null;
   if (t === 'goal' && d.includes('own')) return 'own-goal';
   if (t === 'goal' && d.includes('penalty')) return 'penalty';
   if (t === 'goal') return 'goal';
@@ -165,7 +180,7 @@ function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, h
   const events: MatchEvent[] = [];
   for (const item of rawEvents || []) {
     const teamId = item.team?.id === homeApiId ? homeTeamId : item.team?.id === awayApiId ? awayTeamId : homeTeamId;
-    const type = mapEventType(item.type, item.detail);
+    const type = mapEventType(item.type, item.detail, item.comments);
     if (!type) continue;
     const playerName = item.player?.name || 'Oyuncu';
     events.push({
@@ -186,7 +201,12 @@ function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, h
         detail: `${playerName} yerine`,
       });
     }
-    if ((item.type || '').toLowerCase() === 'goal' && item.assist?.name && !String(item.detail || '').toLowerCase().includes('own')) {
+    if (
+      (item.type || '').toLowerCase() === 'goal' &&
+      item.assist?.name &&
+      !String(item.detail || '').toLowerCase().includes('own') &&
+      !isCancelledGoal(item.type, item.detail, item.comments)
+    ) {
       events.push({
         minute: toNumber(item.time?.elapsed),
         type: 'assist',

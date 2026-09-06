@@ -63,7 +63,16 @@ export async function saveReview(_review: PlayerReview): Promise<void> {
 export async function loadReviews(): Promise<PlayerReview[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase.from('fu_web_reviews').select('payload').order('created_at', { ascending: true });
+  const { data, error } = await supabase
+    .from('fu_web_reviews')
+    .select('payload, user_id')
+    .order('created_at', { ascending: true });
   if (error) return [];
-  return (data || []).map((row) => row.payload as PlayerReview).filter(Boolean);
+  return (data || [])
+    .map((row) => {
+      const payload = row.payload as PlayerReview | null;
+      if (!payload) return null;
+      return { ...payload, authorUserId: payload.authorUserId || row.user_id || undefined };
+    })
+    .filter(Boolean) as PlayerReview[];
 }

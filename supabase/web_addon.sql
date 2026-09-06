@@ -67,18 +67,56 @@ create policy "fu_web_matches_read" on public.fu_web_matches for select using (t
 drop policy if exists "fu_web_standings_read" on public.fu_web_standings;
 create policy "fu_web_standings_read" on public.fu_web_standings for select using (true);
 
--- Kayıtlı kullanıcı sayısı (satır döndürmez, sadece adet)
+-- Web kaydı profiles satırı yoksa yorum FK patlamasın
+create or replace function public.fu_web_ensure_profile(p_display_name text default null, p_avatar text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return;
+  end if;
+
+  insert into public.profiles (id, display_name, avatar_url, auth_provider)
+  values (
+    auth.uid(),
+    nullif(trim(coalesce(p_display_name, '')), ''),
+    nullif(trim(coalesce(p_avatar, '')), ''),
+    'Web'
+  )
+  on conflict (id) do update
+  set auth_provider = case
+    when profiles.auth_provider is null
+      or lower(profiles.auth_provider) in ('', 'misafir', 'guest', 'anonymous')
+    then 'Web'
+    else profiles.auth_provider
+  end;
+exception
+  when others then
+    update public.profiles
+    set auth_provider = coalesce(nullif(auth_provider, ''), 'Web')
+    where id = auth.uid()
+      and (auth_provider is null or lower(auth_provider) in ('misafir', 'guest', 'anonymous', ''));
+end;
+$$;
+
+revoke all on function public.fu_web_ensure_profile(text, text) from public;
+grant execute on function public.fu_web_ensure_profile(text, text) to authenticated;
+
+-- Kayıtlı kullanıcı sayısı (auth.users: web + oyun üyeleri)
 create or replace function public.fu_web_registered_user_count()
 returns integer
 language sql
 stable
 security definer
-set search_path = public
+set search_path = auth, public
 as $$
   select count(*)::integer
-  from public.profiles
-  where auth_provider is not null
-    and lower(auth_provider) not in ('misafir', 'guest', 'anonymous');
+  from auth.users
+  where nullif(trim(email), '') is not null
+    and coalesce(raw_user_meta_data->>'auth_provider', '') not in ('misafir', 'guest', 'anonymous');
 $$;
 
 revoke all on function public.fu_web_registered_user_count() from public;

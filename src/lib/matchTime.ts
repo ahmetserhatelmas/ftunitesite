@@ -80,6 +80,23 @@ export function isMatchLive(match?: { status?: string; kickoffAt?: string | null
   return hasKickoffStarted(match.kickoffAt) || hasKickoffStarted(match.date);
 }
 
+/** Canlı + bitiş sonrası VAR/skor düzeltmesi için birkaç saat daha senkron. */
+export function matchNeedsScoreRefresh(
+  match?: { status?: string; kickoffAt?: string | null; date?: string } | null,
+  windowMs = 4 * 60 * 60 * 1000,
+): boolean {
+  if (!match) return false;
+  if (match.status === 'LIVE') return true;
+  const kickoff = match.kickoffAt
+    ? new Date(match.kickoffAt).getTime()
+    : parseReviewTimestamp(match.date);
+  if (!kickoff || Number.isNaN(kickoff)) {
+    return hasKickoffStarted(match.kickoffAt, -60_000) || hasKickoffStarted(match.date, -60_000);
+  }
+  const elapsed = Date.now() - kickoff;
+  return elapsed >= -60_000 && elapsed <= windowMs;
+}
+
 /** Haftanın tüm maçları bittiyse bir sonraki oynanacak / canlı haftayı döner. */
 export function deriveActiveWeek(
   matches: Array<{ week: number; status?: string; kickoffAt?: string | null; date?: string }>,

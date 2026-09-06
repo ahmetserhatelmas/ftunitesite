@@ -22,9 +22,21 @@ export async function loadWebReviews(): Promise<PlayerReview[]> {
     .filter(Boolean) as PlayerReview[];
 }
 
+export async function ensureWebProfile(displayName?: string, avatar?: string): Promise<void> {
+  const sb = getBrowserSupabase();
+  if (!sb) return;
+  await sb.rpc('fu_web_ensure_profile', {
+    p_display_name: displayName || null,
+    p_avatar: avatar || null,
+  });
+}
+
 export async function saveWebReview(review: PlayerReview, userId?: string): Promise<void> {
   const sb = getBrowserSupabase();
   if (!sb) return;
+  if (userId) {
+    await ensureWebProfile(review.authorName, review.authorAvatar);
+  }
   const { error } = await sb.from('fu_web_reviews').upsert(
     {
       id: review.id,

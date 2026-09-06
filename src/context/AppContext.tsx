@@ -16,10 +16,10 @@ import {
   signUpSharedAccount,
   syncSharedProfilePatch,
 } from '../lib/auth';
-import { deleteWebReview, loadWebReviews, saveWebReview } from '../lib/webReviews';
-import { isOwnReview, mergeReviewLists, stampReviewOwnership } from '../lib/reviews';
+import { deleteWebReview, ensureWebProfile, loadWebReviews, saveWebReview } from '../lib/webReviews';
+import { isOwnReview, replaceReviewsFromCloud, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
-import { deriveActiveWeek, hasKickoffStarted, isMatchLive, matchHasStarted, normalizePersonName } from '../lib/matchTime';
+import { deriveActiveWeek, isMatchLive, matchHasStarted, matchNeedsScoreRefresh, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -471,11 +471,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     let cancelled = false;
-    fetchRegisteredUserCount().then((count) => {
+    const pullCount = async () => {
+      const count = await fetchRegisteredUserCount();
       if (!cancelled && count != null) setRegisteredUserCount(count);
-    });
+    };
+    void pullCount();
+    const id = window.setInterval(() => void pullCount(), 60_000);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, []);
 
@@ -492,7 +496,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       const cloudReviews = await loadWebReviews();
       if (cloudReviews.length) {
-        setReviews((prev) => mergeReviewLists(prev, cloudReviews.map(sanitizeReview), profile));
+        setReviews((prev) => replaceReviewsFromCloud(prev, cloudReviews.map(sanitizeReview), profile));
       }
     };
     void hydrate();
@@ -503,12 +507,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        await ensureWebProfile(session.user.user_metadata?.display_name, session.user.user_metadata?.avatar_emoji);
         const profile = await loadSharedProfile(session.user);
         setUserProfile(profile);
       }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const pullCloudReviews = async () => {
+      const cloud = await loadWebReviews();
+      if (!cloud.length) return;
+      setReviews((prev) => replaceReviewsFromCloud(prev, cloud.map(sanitizeReview), userProfile));
+    };
+    const id = window.setInterval(() => void pullCloudReviews(), 45_000);
+    return () => window.clearInterval(id);
+  }, [userProfile.id, userProfile.isRegistered]);
 
   useEffect(() => {
     if (!userProfile.isRegistered || hasChosenFavoriteClub(userProfile)) return;
@@ -555,9 +570,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: data.lastSync || '',
       });
     }
-    if (Array.isArray(data.reviews) && data.reviews.length > 0) {
-      setReviews((prev) => mergeReviewLists(prev, data.reviews.map(sanitizeReview), userProfile));
-    }
+    // Yorumlar fu_web_reviews'tan gelir. Canlı maç snapshot'ı eski listeyle üzerine yazmasın.
     if (data.lastSync) {
       const dt = new Date(data.lastSync);
       setLastLiveSyncTime(dt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -598,9 +611,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const pullLiveWeek = async () => {
-      const due = matchesRef.current.some(
-        (m) => m.status === 'LIVE' || hasKickoffStarted(m.kickoffAt, -60_000) || hasKickoffStarted(m.date, -60_000),
-      );
+      const due = matchesRef.current.some((m) => matchNeedsScoreRefresh(m));
       if (!due) return;
       try {
         const res = await fetch('/api/live/sync', {
@@ -649,7 +660,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) applyLivePayload(await res.json(), false, { keepWeek: true });
       const cloud = await loadWebReviews();
-      setReviews((prev) => mergeReviewLists(prev, cloud.map(sanitizeReview), userProfile));
+      setReviews((prev) => replaceReviewsFromCloud(prev, cloud.map(sanitizeReview), userProfile));
+      const count = await fetchRegisteredUserCount();
+      if (count != null) setRegisteredUserCount(count);
     } catch (err) {
       console.warn('Sayfa yenileme hatası:', err);
     } finally {
@@ -791,6 +804,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setReviews(prev => [newReview, ...prev]);
     void saveWebReview(newReview, userProfile.isRegistered ? userProfile.id : undefined);
+    void fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReview),
+    });
 
     // Confetti effect for rating participation
     try {

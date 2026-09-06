@@ -3,6 +3,7 @@ import { UserProfile } from '../types';
 import { SUPER_LIG_TEAMS_MAP } from '../data/superLigClubs2026';
 import { censorProfanity } from './censor';
 import { getBrowserSupabase, isBrowserSupabaseConfigured } from './supabase';
+import { ensureWebProfile } from './webReviews';
 
 export interface AuthResult {
   ok: boolean;
@@ -195,6 +196,7 @@ export async function signUpSharedAccount(input: {
   }
 
   await persistWebPrefs(data.user.id, input.favoriteTeamId, input.avatar);
+  await ensureWebProfile(input.nickname, input.avatar);
   await fillEmptyGameDisplayName(data.user.id, input.nickname, input.avatar);
   const profile = await loadSharedProfile(data.user);
   return { ok: true, profile };
@@ -315,6 +317,7 @@ export async function completeSignupWithOtp(input: {
   }
 
   await persistWebPrefs(verified.user.id, input.favoriteTeamId, input.avatar);
+  await ensureWebProfile(input.nickname, input.avatar);
   await fillEmptyGameDisplayName(verified.user.id, input.nickname, input.avatar);
   const profile = await loadSharedProfile(verified.user);
   return { ok: true, profile };
@@ -348,6 +351,7 @@ export async function signInSharedAccount(email: string, password: string): Prom
   if (error) return { ok: false, error: friendlyAuthError(error.message) };
   if (!data.user) return { ok: false, error: 'Oturum açılamadı.' };
 
+  await ensureWebProfile(data.user.user_metadata?.display_name, data.user.user_metadata?.avatar_emoji);
   const profile = await loadSharedProfile(data.user);
   return { ok: true, profile };
 }
