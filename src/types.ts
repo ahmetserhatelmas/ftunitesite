@@ -162,8 +162,10 @@ export interface Match {
   awayPlayers: Player[];
   events: MatchEvent[];
   viewsCount?: number;
-  /** API-SPORTS resmi ilk 11 (tahmini kadro yok). */
+  /** API-SPORTS resmi ilk 11. */
   lineupConfirmed?: boolean;
+  lineupSource?: 'official' | 'predicted';
+  unavailablePlayers?: Array<{ id: string; name: string; reason: string; teamId: string }>;
 }
 
 export interface League {

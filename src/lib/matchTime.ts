@@ -82,10 +82,14 @@ export function isMatchLive(match?: { status?: string; kickoffAt?: string | null
 
 export function publishedLineupSides(match?: {
   lineupConfirmed?: boolean;
+  lineupSource?: 'official' | 'predicted';
   homePlayers?: Array<{ isStarting?: boolean }>;
   awayPlayers?: Array<{ isStarting?: boolean }>;
 } | null): { home: boolean; away: boolean; any: boolean; both: boolean } {
   if (!match) return { home: false, away: false, any: false, both: false };
+  if (match.lineupSource === 'predicted' && !match.lineupConfirmed) {
+    return { home: false, away: false, any: false, both: false };
+  }
   const home = (match.homePlayers || []).filter((player) => player.isStarting).length >= 11;
   const away = (match.awayPlayers || []).filter((player) => player.isStarting).length >= 11;
   const both = Boolean(match.lineupConfirmed) || (home && away);
@@ -94,10 +98,23 @@ export function publishedLineupSides(match?: {
 
 export function hasPublishedLineup(match?: {
   lineupConfirmed?: boolean;
+  lineupSource?: 'official' | 'predicted';
   homePlayers?: Array<{ isStarting?: boolean }>;
   awayPlayers?: Array<{ isStarting?: boolean }>;
 } | null): boolean {
   return publishedLineupSides(match).any;
+}
+
+export function hasPredictedLineup(match?: {
+  lineupSource?: 'official' | 'predicted';
+  lineupConfirmed?: boolean;
+  homePlayers?: Array<{ isStarting?: boolean }>;
+  awayPlayers?: Array<{ isStarting?: boolean }>;
+} | null): boolean {
+  if (!match || match.lineupConfirmed || match.lineupSource !== 'predicted') return false;
+  const home = (match.homePlayers || []).filter((player) => player.isStarting).length;
+  const away = (match.awayPlayers || []).filter((player) => player.isStarting).length;
+  return home >= 8 || away >= 8;
 }
 
 /** Resmi ilk 11 gelmiş olsa bile maç başlayana kadar tekrar çek — son dakika değişir. */
@@ -107,6 +124,7 @@ export function matchNeedsLineupRefresh(
     kickoffAt?: string | null;
     date?: string;
     lineupConfirmed?: boolean;
+    lineupSource?: 'official' | 'predicted';
     homePlayers?: Array<{ isStarting?: boolean }>;
     awayPlayers?: Array<{ isStarting?: boolean }>;
   } | null,
@@ -125,6 +143,46 @@ export function matchNeedsLineupRefresh(
   const untilKickoff = kickoff - Date.now();
   if (untilKickoff <= aheadMs && untilKickoff >= -10 * 60 * 1000) return true;
   return match.status === 'LIVE' && !sides.both;
+}
+
+/** Resmi 11 yokken tahmini kadro için sakatlık/ceza penceresi (günde 2-3 çekim). */
+export function matchNeedsAvailabilityRefresh(
+  match?: {
+    status?: string;
+    kickoffAt?: string | null;
+    date?: string;
+    lineupConfirmed?: boolean;
+  } | null,
+  aheadMs = 7 * 24 * 60 * 60 * 1000,
+): boolean {
+  if (!match || match.status !== 'UPCOMING' || match.lineupConfirmed) return false;
+  const kickoff = match.kickoffAt
+    ? new Date(match.kickoffAt).getTime()
+    : parseReviewTimestamp(match.date);
+  if (!kickoff || Number.isNaN(kickoff)) return false;
+  const untilKickoff = kickoff - Date.now();
+  return untilKickoff > 0 && untilKickoff <= aheadMs;
+}
+
+/** API dakikası yoksa veya 1'de takılıysa kickoff'tan canlı dakika. */
+export function inferredLiveMinute(match?: {
+  status?: string;
+  minute?: number | string;
+  kickoffAt?: string | null;
+  date?: string;
+} | null): number {
+  const kickoff = match?.kickoffAt
+    ? new Date(match.kickoffAt).getTime()
+    : parseReviewTimestamp(match?.date);
+  const fromKick = kickoff && !Number.isNaN(kickoff)
+    ? Math.max(1, Math.floor((Date.now() - kickoff) / 60_000))
+    : 0;
+  const raw = match?.minute;
+  const apiMin = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
+  const hasApi = Number.isFinite(apiMin) && apiMin > 0;
+  if (hasApi && apiMin > 1) return Math.min(apiMin, 130);
+  if (fromKick > 2) return Math.min(fromKick, 130);
+  return hasApi ? Math.min(apiMin, 130) : Math.max(1, fromKick || 1);
 }
 
 /** Canlı + bitiş sonrası VAR/skor düzeltmesi için birkaç saat daha senkron. */

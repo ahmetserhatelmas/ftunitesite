@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { LayoutGrid, ListFilter, Users, Shield, Award, Flame, MessageSquare, Lock } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
 import { StadiumBackdrop } from './StadiumBackdrop';
-import { hasPublishedLineup, isMatchLive } from '../lib/matchTime';
+import { hasPredictedLineup, hasPublishedLineup, inferredLiveMinute, isMatchLive } from '../lib/matchTime';
 
 export const MatchHero: React.FC = () => {
   const {
@@ -24,7 +24,8 @@ export const MatchHero: React.FC = () => {
   const writeLock = matchWriteLock(selectedMatch);
   const isLive = isMatchLive(selectedMatch);
   const officialXi = hasPublishedLineup(selectedMatch);
-  const liveMin = selectedMatch.minute ?? 78;
+  const predictedXi = hasPredictedLineup(selectedMatch);
+  const liveMin = inferredLiveMinute(selectedMatch);
   const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
   const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
 
@@ -78,12 +79,18 @@ export const MatchHero: React.FC = () => {
             {selectedMatch.status === 'UPCOMING' && officialXi && (
               <span className="text-violet-800 font-bold bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200 flex items-center gap-1 text-[11px]">
                 <Users className="w-3 h-3 text-violet-600" />
-                <span>İlk 11 yayınlandı</span>
+                <span>Resmi 11</span>
               </span>
             )}
-            {selectedMatch.status === 'UPCOMING' && !officialXi && (
-              <span className="text-slate-600 font-bold bg-slate-50 px-2.5 py-0.5 rounded-full border border-slate-200 flex items-center gap-1 text-[11px]">
-                <Users className="w-3 h-3 text-slate-400" />
+            {selectedMatch.status === 'UPCOMING' && !officialXi && predictedXi && (
+              <span className="text-amber-900 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 text-[11px]">
+                <Users className="w-3 h-3 text-amber-600" />
+                <span>Tahmini 11</span>
+              </span>
+            )}
+            {selectedMatch.status === 'UPCOMING' && !officialXi && !predictedXi && (
+              <span className="text-white/80 font-bold bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20 flex items-center gap-1 text-[11px]">
+                <Users className="w-3 h-3 text-white/60" />
                 <span>İlk 11 henüz yok</span>
               </span>
             )}

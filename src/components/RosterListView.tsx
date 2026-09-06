@@ -4,6 +4,7 @@ import { Player, PositionCategory } from '../types';
 import { Star, MessageSquare, Award, ArrowUpRight, Shield, Briefcase, ChevronRight } from 'lucide-react';
 import { FootballJersey } from './FootballJersey';
 import { TeamLogo } from './TeamLogo';
+import { hasPredictedLineup, hasPublishedLineup } from '../lib/matchTime';
 
 export const RosterListView: React.FC = () => {
   const {
@@ -24,6 +25,8 @@ export const RosterListView: React.FC = () => {
   if (!selectedMatch) return null;
 
   const canWrite = canWriteMatchReview(selectedMatch);
+  const officialXi = hasPublishedLineup(selectedMatch);
+  const predictedXi = hasPredictedLineup(selectedMatch);
 
   const allMatchPlayers = [...selectedMatch.homePlayers, ...selectedMatch.awayPlayers];
 
@@ -48,9 +51,19 @@ export const RosterListView: React.FC = () => {
 
   return (
     <div className="w-full space-y-4">
-      {selectedMatch.status === 'UPCOMING' && allMatchPlayers.length === 0 && (
+      {selectedMatch.status === 'UPCOMING' && officialXi && (
+        <div className="bg-violet-50 border-2 border-violet-200 rounded-3xl px-4 py-3 text-[12px] sm:text-sm font-bold text-violet-900">
+          Resmi 11
+        </div>
+      )}
+      {selectedMatch.status === 'UPCOMING' && !officialXi && predictedXi && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl px-4 py-3 text-[12px] sm:text-sm font-bold text-amber-950">
+          Tahmini 11 — resmi yayınlanınca yerine geçer.
+        </div>
+      )}
+      {selectedMatch.status === 'UPCOMING' && !officialXi && !predictedXi && allMatchPlayers.length === 0 && (
         <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl px-4 py-3 text-[12px] sm:text-sm font-bold text-slate-600">
-          Resmi ilk 11 henüz açıklanmadı. Yayınlanınca kadro burada görünecek.
+          Resmi 11 henüz açıklanmadı. Yayınlanınca kadro burada görünecek.
         </div>
       )}
 

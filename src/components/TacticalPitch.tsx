@@ -4,7 +4,7 @@ import { Player } from '../types';
 import { MessageSquare, Star, Crown, Shield, BarChart3, Eye, EyeOff, Sparkles, CheckCircle2, Briefcase, ChevronRight } from 'lucide-react';
 import { FootballJersey } from './FootballJersey';
 import { TeamLogo } from './TeamLogo';
-import { hasPublishedLineup } from '../lib/matchTime';
+import { hasPredictedLineup, hasPublishedLineup } from '../lib/matchTime';
 
 export const TacticalPitch: React.FC = () => {
   const {
@@ -31,6 +31,7 @@ export const TacticalPitch: React.FC = () => {
 
   const canWrite = canWriteMatchReview(selectedMatch);
   const officialXi = hasPublishedLineup(selectedMatch);
+  const predictedXi = hasPredictedLineup(selectedMatch);
 
   // Filter players based on teamTab and positionFilter (search engine results do not affect pitch layout)
   const filterPlayer = (player: Player) => {
@@ -266,14 +267,22 @@ export const TacticalPitch: React.FC = () => {
         </div>
 
         {selectedMatch.status === 'UPCOMING' && (
-          <div className={`mb-3 px-3 py-2 rounded-2xl border text-[11px] sm:text-xs font-bold ${
+          <div className={`mb-3 px-3 py-2 rounded-2xl border text-[11px] sm:text-xs font-bold dark:border-slate-600 ${
             officialXi
               ? 'bg-violet-50 text-violet-900 border-violet-200'
-              : 'bg-slate-50 text-slate-600 border-slate-200'
+              : predictedXi
+                ? 'bg-amber-50 text-amber-950 border-amber-200'
+                : 'bg-slate-50 text-slate-600 border-slate-200'
           }`}>
             {officialXi
-              ? 'Resmi ilk 11 yayınlandı.'
-              : 'Resmi ilk 11 henüz açıklanmadı. Yayınlanınca otomatik sahaya yazılacak.'}
+              ? 'Resmi 11 yayınlandı — tahmini kadro kaldırıldı.'
+              : predictedXi
+                ? `Tahmini 11: son resmi kadro, sakatlık ve ceza düşülerek. Resmi yayınlanınca değişir.${
+                    selectedMatch.unavailablePlayers?.length
+                      ? ` Dışarıda: ${selectedMatch.unavailablePlayers.map((row) => row.name).slice(0, 4).join(', ')}.`
+                      : ''
+                  }`
+                : 'Resmi ilk 11 henüz açıklanmadı. Yayınlanınca otomatik sahaya yazılacak.'}
           </div>
         )}
 
@@ -346,7 +355,7 @@ export const TacticalPitch: React.FC = () => {
             </div>
           )}
 
-          {selectedMatch.status === 'UPCOMING' && homeStarters.length === 0 && awayStarters.length === 0 && (
+          {selectedMatch.status === 'UPCOMING' && !officialXi && !predictedXi && homeStarters.length === 0 && awayStarters.length === 0 && (
             <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-6">
               <div className="bg-slate-950/70 text-white text-center text-[11px] sm:text-sm font-black px-4 py-3 rounded-2xl border border-white/20 max-w-md">
                 İlk 11 henüz yayınlanmadı

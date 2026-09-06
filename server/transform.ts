@@ -257,18 +257,21 @@ export function transformFixture(raw: any): Match {
     stadium: venue || 'Süper Lig',
     referee: raw.fixture?.referee || 'Belirlenmedi',
     status,
-    minute: status === 'LIVE' ? raw.fixture?.status?.elapsed || 1 : undefined,
-    liveSeconds: status === 'LIVE' ? 0 : 0,
+    minute: status === 'LIVE' ? (toNumber(raw.fixture?.status?.elapsed) || undefined) : undefined,
+    liveSeconds: 0,
     homeTeam,
     awayTeam,
-    homeScore: raw.goals?.home ?? 0,
-    awayScore: raw.goals?.away ?? 0,
+    homeScore: raw.goals?.home ?? raw.score?.fulltime?.home ?? raw.score?.halftime?.home ?? 0,
+    awayScore: raw.goals?.away ?? raw.score?.fulltime?.away ?? raw.score?.halftime?.away ?? 0,
     homePlayers: buildPlayers(homeLineup, homeTeam.id, true, stats),
     awayPlayers: buildPlayers(awayLineup, awayTeam.id, false, stats),
     events: buildEvents(raw.events || [], homeTeam.id, awayTeam.id, raw.teams?.home?.id, raw.teams?.away?.id),
     viewsCount: 0,
-    lineupConfirmed:
-      (homeLineup?.startXI || []).length >= 11 && (awayLineup?.startXI || []).length >= 11,
+    lineupConfirmed: (homeLineup?.startXI || []).length >= 11 && (awayLineup?.startXI || []).length >= 11,
+    lineupSource:
+      (homeLineup?.startXI || []).length >= 11 || (awayLineup?.startXI || []).length >= 11
+        ? 'official'
+        : undefined,
   };
 }
 

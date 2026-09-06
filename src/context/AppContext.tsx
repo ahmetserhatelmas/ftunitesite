@@ -19,7 +19,7 @@ import {
 import { deleteWebReview, ensureWebProfile, loadWebReviews, saveWebReview } from '../lib/webReviews';
 import { isOwnReview, replaceReviewsFromCloud, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
-import { deriveActiveWeek, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, matchNeedsScoreRefresh, normalizePersonName } from '../lib/matchTime';
+import { deriveActiveWeek, inferredLiveMinute, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -536,12 +536,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let started: Match[] | undefined;
     if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
       started = (data.matches as Match[]).map((match) => {
-        if (match.status !== 'FT' && isMatchLive(match)) {
-          return { ...match, status: 'LIVE' as const, minute: match.minute || 1 };
-        }
-        return match;
+        if (match.status === 'FT' || !isMatchLive(match)) return match;
+        return { ...match, status: 'LIVE' as const, minute: inferredLiveMinute(match) };
       });
-      setMatches(started);
+      setMatches((prev) => {
+        const prevById = new Map(prev.map((match) => [match.id, match]));
+        return started!.map((match) => {
+          const old = prevById.get(match.id);
+          if (
+            old?.status === 'LIVE'
+            && match.status === 'LIVE'
+            && old.minute === match.minute
+          ) {
+            return { ...match, liveSeconds: old.liveSeconds };
+          }
+          return match;
+        });
+      });
       for (const match of started) {
         if (match.homePlayers?.length || match.awayPlayers?.length) {
           hydratedWeeks.current.add(match.week);
@@ -610,29 +621,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
-    const pullLiveWeek = async () => {
-      const dueWeeks = [...new Set(
-        matchesRef.current
-          .filter((m) => matchNeedsScoreRefresh(m) || matchNeedsLineupRefresh(m))
-          .map((m) => m.week)
-          .filter((week) => week > 0),
-      )];
-      if (!dueWeeks.length) return;
+    const pullLiveSnapshot = async () => {
       try {
-        for (const week of dueWeeks) {
-          const res = await fetch('/api/live/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ week }),
-          });
-          if (res.ok) applyLivePayload(await res.json());
-        }
+        const res = await fetch('/api/live/matches');
+        if (res.ok) applyLivePayload(await res.json(), false, { keepWeek: true });
       } catch {
         // ignore
       }
     };
-    const soon = window.setTimeout(() => void pullLiveWeek(), 2500);
-    const id = window.setInterval(() => void pullLiveWeek(), 40_000);
+    const soon = window.setTimeout(() => void pullLiveSnapshot(), 2500);
+    const id = window.setInterval(() => void pullLiveSnapshot(), 15_000);
     return () => {
       window.clearTimeout(soon);
       window.clearInterval(id);
@@ -683,25 +681,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMatches((prevMatches) => {
         let hasLive = false;
         const updated = prevMatches.map((m) => {
-          if (m.status !== 'FT' && m.status !== 'LIVE' && isMatchLive(m)) {
+          if (m.status !== 'FT' && isMatchLive(m)) {
             hasLive = true;
-            return { ...m, status: 'LIVE' as const, minute: m.minute || 1, liveSeconds: m.liveSeconds || 0 };
-          }
-          if (m.status === 'LIVE') {
-            hasLive = true;
-            const currentMin = typeof m.minute === 'number' ? m.minute : (parseInt(String(m.minute || '78'), 10) || 78);
+            const floor = inferredLiveMinute(m);
+            const currentMin = typeof m.minute === 'number' ? m.minute : floor;
             const currentSec = typeof m.liveSeconds === 'number' ? m.liveSeconds : 0;
-
+            let nextMin = Math.max(currentMin, floor);
             let nextSec = currentSec + 1;
-            let nextMin = currentMin;
-
+            if (floor > currentMin) nextSec = 0;
             if (nextSec >= 60) {
               nextSec = 0;
-              nextMin = Math.min(nextMin + 1, 100);
+              nextMin = Math.min(nextMin + 1, 130);
             }
-
             return {
               ...m,
+              status: 'LIVE' as const,
               minute: nextMin,
               liveSeconds: nextSec,
             };

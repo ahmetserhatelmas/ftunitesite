@@ -4,7 +4,7 @@ import { Match } from '../types';
 import { MessageSquare, MapPin, Award } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
 import { StadiumBackdrop } from './StadiumBackdrop';
-import { formatMatchKickoff, hasPublishedLineup, isMatchLive } from '../lib/matchTime';
+import { formatMatchKickoff, hasPredictedLineup, hasPublishedLineup, inferredLiveMinute, isMatchLive } from '../lib/matchTime';
 
 const TR_MONTHS: Record<string, number> = {
   ocak: 0,
@@ -112,8 +112,9 @@ export const WeeklyMatchSlider: React.FC = () => {
           const commentCount = getMatchTotalComments(match.id);
           const isLive = isMatchLive(match);
           const officialXi = hasPublishedLineup(match);
+          const predictedXi = hasPredictedLineup(match);
           const statusLabel = match.status === 'FT' ? 'BİTTİ' : upcomingStatusLabel(match);
-          const liveMin = match.minute ?? 78;
+          const liveMin = inferredLiveMinute(match);
           const liveSec = typeof match.liveSeconds === 'number' ? match.liveSeconds : 0;
           const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
 
@@ -223,7 +224,16 @@ export const WeeklyMatchSlider: React.FC = () => {
                         ? 'bg-violet-200 text-violet-950'
                         : 'bg-violet-50 text-violet-800 border border-violet-200'
                     }`}>
-                      11
+                      Resmi 11
+                    </span>
+                  )}
+                  {!officialXi && predictedXi && match.status === 'UPCOMING' && (
+                    <span className={`flex items-center gap-1 font-black px-2 py-0.5 rounded-full ${
+                      isSelected
+                        ? 'bg-amber-200 text-amber-950'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200'
+                    }`}>
+                      T
                     </span>
                   )}
                   <span className={`flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full ${
