@@ -2,6 +2,7 @@ import { League, Match, PlayerReview } from '../src/types';
 import { StandingTeam } from '../src/data/superLigStandings';
 import {
   fetchCurrentRound,
+  fetchFixtureLineups,
   fetchFixturesDetailed,
   fetchSeasonFixtures,
   fetchStandings,
@@ -18,7 +19,14 @@ import {
 } from './supabase';
 import { buildLeague, transformFixture, transformStandings } from './transform';
 import { parseRoundWeek } from './teamCatalog';
-import { deriveActiveWeek, hasKickoffStarted, isMatchLive, matchNeedsScoreRefresh } from '../src/lib/matchTime';
+import {
+  deriveActiveWeek,
+  hasKickoffStarted,
+  isMatchLive,
+  matchNeedsLineupRefresh,
+  matchNeedsScoreRefresh,
+  publishedLineupSides,
+} from '../src/lib/matchTime';
 
 interface LiveSnapshot {
   matches: Match[];
@@ -53,6 +61,17 @@ function statusRank(status: Match['status']): number {
   return 0;
 }
 
+function pickOfficialPlayers(
+  incoming: Match['homePlayers'],
+  previous: Match['homePlayers'],
+  incomingHasXi: boolean,
+  previousHasXi: boolean,
+): Match['homePlayers'] {
+  if (incomingHasXi) return incoming;
+  if (previousHasXi) return previous;
+  return incoming.length >= previous.length ? incoming : previous;
+}
+
 function mergeMatches(incoming: Match[]): void {
   const map = new Map(store.matches.map((match) => [match.id, match]));
   for (const match of incoming) {
@@ -69,12 +88,12 @@ function mergeMatches(incoming: Match[]): void {
       incomingThin &&
       incomingBlankScore &&
       (previous.status === 'LIVE' || previous.status === 'FT');
-    const useIncomingEvents = match.events.length > 0 || match.homePlayers.length >= 11;
+    const incomingXi = publishedLineupSides(match);
+    const previousXi = publishedLineupSides(previous);
+    const useIncomingEvents = match.events.length > 0 || incomingXi.any;
     const body = incomingDepth >= previousDepth ? match : {
       ...previous,
       ...match,
-      homePlayers: previous.homePlayers.length ? previous.homePlayers : match.homePlayers,
-      awayPlayers: previous.awayPlayers.length ? previous.awayPlayers : match.awayPlayers,
       events: useIncomingEvents ? match.events : (previous.events.length ? previous.events : match.events),
     };
     const kickoffAt = match.kickoffAt || previous.kickoffAt;
@@ -89,6 +108,9 @@ function mergeMatches(incoming: Match[]): void {
       ...body,
       kickoffAt,
       status,
+      homePlayers: pickOfficialPlayers(match.homePlayers, previous.homePlayers, incomingXi.home, previousXi.home),
+      awayPlayers: pickOfficialPlayers(match.awayPlayers, previous.awayPlayers, incomingXi.away, previousXi.away),
+      lineupConfirmed: incomingXi.both || previousXi.both,
       homeScore: keepPreviousScore ? previous.homeScore : (match.homeScore ?? 0),
       awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
       minute: status === 'LIVE' ? (match.minute ?? previous.minute ?? 1) : (match.minute ?? previous.minute),
@@ -131,7 +153,20 @@ export async function hydrateWeek(week: number): Promise<void> {
 
   const detailed = await fetchFixturesDetailed(ids);
   if (detailed.length === 0) return;
-  mergeMatches(detailed.map(transformFixture));
+
+  const withLineups = await Promise.all(
+    detailed.map(async (raw) => {
+      const mapped = transformFixture(raw);
+      if (!matchNeedsLineupRefresh(mapped)) return raw;
+      const alreadyBoth = publishedLineupSides(mapped).both;
+      if (alreadyBoth && mapped.status !== 'UPCOMING') return raw;
+      const lineups = await fetchFixtureLineups(raw.fixture?.id);
+      if (!lineups.length) return raw;
+      return { ...raw, lineups };
+    }),
+  );
+
+  mergeMatches(withLineups.map(transformFixture));
   store.lastSync = new Date().toISOString();
   store.source = 'API-SPORTS Football v3 • Trendyol Süper Lig';
   await saveMatches(store.season, store.matches.filter((match) => match.week === week));
@@ -210,8 +245,13 @@ export function ensureBootstrapped(): Promise<void> {
   return bootstrapPromise;
 }
 
-function needsLiveRefresh(): boolean {
-  return store.matches.some((match) => matchNeedsScoreRefresh(match));
+function weeksNeedingRefresh(): number[] {
+  return [...new Set(
+    store.matches
+      .filter((match) => matchNeedsScoreRefresh(match) || matchNeedsLineupRefresh(match))
+      .map((match) => match.week)
+      .filter((week) => week > 0),
+  )];
 }
 
 let livePollerStarted = false;
@@ -220,11 +260,15 @@ function startLivePoller(): void {
   if (livePollerStarted) return;
   livePollerStarted = true;
   setInterval(() => {
-    if (!needsLiveRefresh()) return;
-    const week = store.league.currentWeek;
-    void syncWeek(week).catch((error) => {
-      console.warn('Canlı hafta senkronu başarısız:', error);
-    });
+    const weeks = weeksNeedingRefresh();
+    if (!weeks.length) return;
+    void (async () => {
+      for (const week of weeks) {
+        await syncWeek(week).catch((error) => {
+          console.warn('Canlı hafta senkronu başarısız:', error);
+        });
+      }
+    })();
   }, 45_000);
 }
 

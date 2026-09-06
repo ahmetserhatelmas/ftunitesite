@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { Match } from '../types';
 import { MessageSquare, MapPin, Award } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
-import { formatMatchKickoff, isMatchLive } from '../lib/matchTime';
+import { StadiumBackdrop } from './StadiumBackdrop';
+import { formatMatchKickoff, hasPublishedLineup, isMatchLive } from '../lib/matchTime';
 
 const TR_MONTHS: Record<string, number> = {
   ocak: 0,
@@ -81,8 +82,8 @@ export const WeeklyMatchSlider: React.FC = () => {
 
   if (weekMatches.length === 0) {
     return (
-      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-6 text-center text-slate-500 my-2 w-full shadow-sm">
-        <p className="text-sm font-bold text-slate-700">Bu hafta için henüz maç kaydı bulunmuyor.</p>
+      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-6 text-center text-slate-500 my-2 w-full shadow-sm dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400">
+        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Bu hafta için henüz maç kaydı bulunmuyor.</p>
         <p className="text-xs text-slate-400 mt-1">Farklı bir hafta seçerek maçları ve oyuncu notlarını inceleyebilirsiniz.</p>
       </div>
     );
@@ -93,13 +94,13 @@ export const WeeklyMatchSlider: React.FC = () => {
       <div className="flex items-center justify-between gap-2 mb-2.5 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <h2 className="text-xs font-black tracking-tight text-slate-900 uppercase truncate">
+          <h2 className="text-xs font-black tracking-tight text-slate-900 uppercase truncate dark:text-white">
             <span className="sm:hidden">{selectedWeek}. Hafta Maçları</span>
             <span className="hidden sm:inline">{selectedWeek}. Hafta Fikstürü & Karşılaşmalar</span>
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-sm whitespace-nowrap">
+          <span className="text-[11px] font-bold text-slate-600 bg-white px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-sm whitespace-nowrap dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
             {weekMatches.length} Maç
           </span>
         </div>
@@ -110,6 +111,7 @@ export const WeeklyMatchSlider: React.FC = () => {
           const isSelected = match.id === selectedMatchId;
           const commentCount = getMatchTotalComments(match.id);
           const isLive = isMatchLive(match);
+          const officialXi = hasPublishedLineup(match);
           const statusLabel = match.status === 'FT' ? 'BİTTİ' : upcomingStatusLabel(match);
           const liveMin = match.minute ?? 78;
           const liveSec = typeof match.liveSeconds === 'number' ? match.liveSeconds : 0;
@@ -120,16 +122,17 @@ export const WeeklyMatchSlider: React.FC = () => {
               key={match.id}
               id={`match-card-${match.id}`}
               onClick={() => setSelectedMatchId(match.id)}
-              className={`relative text-left p-3 sm:p-4 rounded-2xl transition-all group overflow-hidden w-full min-w-0 ${
+              className={`relative text-left p-3 sm:p-4 rounded-2xl transition-all group overflow-hidden w-full min-w-0 text-white ${
                 isLive
                   ? isSelected
-                    ? 'bg-emerald-700 text-white shadow-xl shadow-emerald-800/30 border-2 border-rose-500 ring-2 ring-rose-400'
-                    : 'bg-white hover:bg-rose-50/50 border-2 border-rose-400 shadow-md hover:shadow-lg ring-1 ring-rose-300'
+                    ? 'shadow-xl shadow-emerald-800/30 border-2 border-rose-500 ring-2 ring-rose-400'
+                    : 'border-2 border-rose-400 shadow-md hover:shadow-lg ring-1 ring-rose-300'
                   : isSelected
-                  ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-700/20 border-2 border-emerald-500 ring-2 ring-emerald-300'
-                  : 'bg-white hover:bg-emerald-50/70 border-2 border-emerald-100 hover:border-emerald-300 shadow-sm hover:shadow-md'
+                  ? 'shadow-xl shadow-emerald-700/20 border-2 border-emerald-400 ring-2 ring-emerald-300'
+                  : 'border-2 border-white/15 hover:border-emerald-300/70 shadow-sm hover:shadow-md'
               }`}
             >
+              <StadiumBackdrop variant="night" overlayClassName={isSelected ? 'bg-slate-950/55' : 'bg-slate-950/68'} />
               {/* Top-Right LIVE Indicator Badge / Ribbon - ONLY on the live match card */}
               {isLive && (
                 <div className="absolute top-0 right-0 z-10">
@@ -146,9 +149,9 @@ export const WeeklyMatchSlider: React.FC = () => {
               )}
 
               {/* Match Header: Status & Stadium */}
-              <div className="flex items-center justify-between text-[11px] mb-3">
-                <span className={`flex items-center gap-1 font-medium min-w-0 flex-1 ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
-                  <MapPin className={`w-3 h-3 shrink-0 ${isSelected ? 'text-emerald-200' : 'text-slate-400'}`} />
+              <div className="relative z-[1] flex items-center justify-between text-[11px] mb-3">
+                <span className={`relative z-[1] flex items-center gap-1 font-medium min-w-0 flex-1 ${isSelected ? 'text-emerald-100' : 'text-white/70'}`}>
+                  <MapPin className={`w-3 h-3 shrink-0 ${isSelected ? 'text-emerald-200' : 'text-white/55'}`} />
                   <span className="truncate">{match.stadium}</span>
                 </span>
                 
@@ -175,12 +178,12 @@ export const WeeklyMatchSlider: React.FC = () => {
               </div>
 
               {/* Match Teams & Scoreboard */}
-              <div className="flex items-center justify-between py-1 gap-1.5 min-w-0">
+              <div className="relative z-[1] flex items-center justify-between py-1 gap-1.5 min-w-0">
                 {/* Home Team */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0">
                   <TeamLogo team={match.homeTeam} size="md" shape="circle" className="ring-2 ring-white shrink-0 sm:w-10 sm:h-10" />
                   <div className="min-w-0">
-                    <p className={`font-black text-[11px] sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                    <p className="font-black text-[11px] sm:text-sm truncate text-white">
                       <span className="sm:hidden">{match.homeTeam.shortName || match.homeTeam.name}</span>
                       <span className="hidden sm:inline">{match.homeTeam.name}</span>
                     </p>
@@ -199,7 +202,7 @@ export const WeeklyMatchSlider: React.FC = () => {
                 {/* Away Team */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0 justify-end text-right">
                   <div className="min-w-0">
-                    <p className={`font-black text-[11px] sm:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                    <p className="font-black text-[11px] sm:text-sm truncate text-white">
                       <span className="sm:hidden">{match.awayTeam.shortName || match.awayTeam.name}</span>
                       <span className="hidden sm:inline">{match.awayTeam.name}</span>
                     </p>
@@ -209,11 +212,20 @@ export const WeeklyMatchSlider: React.FC = () => {
               </div>
 
               {/* Bottom Info: Date & Comments Count */}
-              <div className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
-                isSelected ? 'border-emerald-500/50 text-emerald-100' : 'border-slate-100 text-slate-500'
+              <div className={`relative z-[1] mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
+                isSelected ? 'border-emerald-400/40 text-emerald-100' : 'border-white/15 text-white/70'
               }`}>
                 <span className="truncate font-medium min-w-0 pr-2">{formatMatchKickoff(match.kickoffAt, match.date)}</span>
                 <div className="flex items-center gap-2">
+                  {officialXi && match.status === 'UPCOMING' && (
+                    <span className={`flex items-center gap-1 font-black px-2 py-0.5 rounded-full ${
+                      isSelected
+                        ? 'bg-violet-200 text-violet-950'
+                        : 'bg-violet-50 text-violet-800 border border-violet-200'
+                    }`}>
+                      11
+                    </span>
+                  )}
                   <span className={`flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full ${
                     isSelected
                       ? 'bg-white text-emerald-800'

@@ -2,7 +2,8 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutGrid, ListFilter, Users, Shield, Award, Flame, MessageSquare, Lock } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
-import { isMatchLive } from '../lib/matchTime';
+import { StadiumBackdrop } from './StadiumBackdrop';
+import { hasPublishedLineup, isMatchLive } from '../lib/matchTime';
 
 export const MatchHero: React.FC = () => {
   const {
@@ -22,6 +23,7 @@ export const MatchHero: React.FC = () => {
   const totalReviews = reviews.filter((r) => r.matchId === selectedMatch.id).length;
   const writeLock = matchWriteLock(selectedMatch);
   const isLive = isMatchLive(selectedMatch);
+  const officialXi = hasPublishedLineup(selectedMatch);
   const liveMin = selectedMatch.minute ?? 78;
   const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
   const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
@@ -29,9 +31,10 @@ export const MatchHero: React.FC = () => {
   return (
     <div className="w-full space-y-3">
       {/* Big Score Card */}
-      <div className={`bg-white rounded-3xl p-4 sm:p-6 shadow-md relative overflow-hidden transition-all ${
-        isLive ? 'border-2 border-rose-400 ring-2 ring-rose-300/40 shadow-rose-900/10' : 'border-2 border-emerald-100'
+      <div className={`rounded-3xl p-4 sm:p-6 shadow-md relative overflow-hidden transition-all text-white ${
+        isLive ? 'border-2 border-rose-400 ring-2 ring-rose-300/40 shadow-rose-900/10' : 'border-2 border-white/15'
       }`}>
+        <StadiumBackdrop variant="stands" overlayClassName="bg-slate-950/62" />
         {/* Top-Right LIVE Ribbon / Tag - ONLY for this live match panel */}
         {isLive && (
           <div className="absolute top-0 right-0 z-10">
@@ -53,9 +56,9 @@ export const MatchHero: React.FC = () => {
         />
 
         {/* Top bar with league & referee */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-50 pb-3 mb-4 text-xs text-slate-500 font-medium">
+        <div className="relative z-[1] flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-3 mb-4 text-xs text-white/70 font-medium">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">{selectedMatch.leagueName}</span>
+            <span className="font-bold text-white">{selectedMatch.leagueName}</span>
             <span>•</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
               {selectedMatch.week}. Hafta Karşılaşması
@@ -72,19 +75,31 @@ export const MatchHero: React.FC = () => {
                 <span>Oynanmadı (Kilitli)</span>
               </span>
             )}
+            {selectedMatch.status === 'UPCOMING' && officialXi && (
+              <span className="text-violet-800 font-bold bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200 flex items-center gap-1 text-[11px]">
+                <Users className="w-3 h-3 text-violet-600" />
+                <span>İlk 11 yayınlandı</span>
+              </span>
+            )}
+            {selectedMatch.status === 'UPCOMING' && !officialXi && (
+              <span className="text-slate-600 font-bold bg-slate-50 px-2.5 py-0.5 rounded-full border border-slate-200 flex items-center gap-1 text-[11px]">
+                <Users className="w-3 h-3 text-slate-400" />
+                <span>İlk 11 henüz yok</span>
+              </span>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-semibold sm:pr-28 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/70 font-semibold sm:pr-28 min-w-0">
             <span className="truncate max-w-[180px] sm:max-w-none">🏟️ {selectedMatch.stadium}</span>
             <span className="truncate max-w-[200px] sm:max-w-none">👔 Hakem: {selectedMatch.referee}</span>
           </div>
         </div>
 
         {/* Main Matchup Arena */}
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 py-2 min-w-0">
+        <div className="relative z-[1] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 py-2 min-w-0">
           {/* Home Team */}
           <div className="min-w-0 flex items-center justify-end gap-2 sm:gap-4 text-right">
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+              <h1 className="text-sm sm:text-2xl font-black text-white tracking-tight truncate">
                 <span className="sm:hidden">{selectedMatch.homeTeam.shortName}</span>
                 <span className="hidden sm:inline">{selectedMatch.homeTeam.name}</span>
               </h1>
@@ -128,7 +143,7 @@ export const MatchHero: React.FC = () => {
               className="ring-4 ring-slate-100 shadow-md shrink-0 sm:w-16 sm:h-16 sm:text-3xl"
             />
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+              <h1 className="text-sm sm:text-2xl font-black text-white tracking-tight truncate">
                 <span className="sm:hidden">{selectedMatch.awayTeam.shortName}</span>
                 <span className="hidden sm:inline">{selectedMatch.awayTeam.name}</span>
               </h1>
@@ -138,8 +153,8 @@ export const MatchHero: React.FC = () => {
 
         {/* Match Events timeline bar */}
         {selectedMatch.events && selectedMatch.events.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-1.5 sm:gap-2 text-xs">
-            <span className="text-slate-400 font-bold text-[11px] uppercase mr-1">Önemli Anlar:</span>
+          <div className="relative z-[1] mt-4 pt-3 border-t border-white/15 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-1.5 sm:gap-2 text-xs">
+            <span className="text-white/50 font-bold text-[11px] uppercase mr-1">Önemli Anlar:</span>
             {selectedMatch.events.map((event, idx) => (
               <div
                 key={idx}
@@ -163,7 +178,7 @@ export const MatchHero: React.FC = () => {
       </div>
 
       {/* View Mode Bar & Team / Position Filters */}
-      <div className="mt-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border-2 border-emerald-100 p-2.5 rounded-2xl text-xs shadow-sm">
+      <div className="mt-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border-2 border-emerald-100 p-2.5 rounded-2xl text-xs shadow-sm dark:bg-slate-900 dark:border-slate-700">
         
         {/* Left: View Switcher (Pitch / Tactical vs Roster List) */}
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl min-w-0 overflow-x-auto no-scrollbar">

@@ -131,7 +131,7 @@ export const HomeReviewsPanel: React.FC = () => {
   };
 
   return (
-    <section className="bg-white border-2 border-emerald-100 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+    <section className="bg-white border-2 border-emerald-100 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
       
       {/* Header with Title and View All Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-50">

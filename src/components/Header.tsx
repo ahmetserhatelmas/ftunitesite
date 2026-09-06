@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trophy, Calendar, Search, Star, MessageSquare, ChevronLeft, ChevronRight, Shield, Crown, LayoutGrid, RefreshCw, Radio, CheckCircle2, User, UserPlus, Flame, TrendingUp, Briefcase, Users } from 'lucide-react';
+import { Trophy, Calendar, Search, Star, MessageSquare, ChevronLeft, ChevronRight, Shield, Crown, LayoutGrid, RefreshCw, Radio, CheckCircle2, User, UserPlus, Flame, TrendingUp, Briefcase, Users, Moon, Sun } from 'lucide-react';
 import { SearchAutocomplete } from './SearchAutocomplete';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
   onOpenAddMatch?: () => void;
@@ -35,6 +36,7 @@ export const Header: React.FC<HeaderProps> = () => {
     refreshLiveData,
     isLiveSyncing,
   } = useApp();
+  const { theme, toggleTheme } = useTheme();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const currentLeague = leagues.find(l => l.id === selectedLeagueId) || leagues[0];
@@ -114,6 +116,16 @@ export const Header: React.FC<HeaderProps> = () => {
               title="Sonraki Hafta"
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              id="theme-toggle-btn"
+              type="button"
+              onClick={toggleTheme}
+              className="ml-0.5 p-1.5 rounded-lg bg-emerald-800/80 hover:bg-emerald-700 text-amber-200 border border-emerald-500/50 transition"
+              title={theme === 'dark' ? 'Açık moda geç' : 'Koyu moda geç'}
+              aria-label={theme === 'dark' ? 'Açık moda geç' : 'Koyu moda geç'}
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
             <button
               id="refresh-live-data-btn"

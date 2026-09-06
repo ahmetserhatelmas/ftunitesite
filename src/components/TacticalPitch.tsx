@@ -4,6 +4,7 @@ import { Player } from '../types';
 import { MessageSquare, Star, Crown, Shield, BarChart3, Eye, EyeOff, Sparkles, CheckCircle2, Briefcase, ChevronRight } from 'lucide-react';
 import { FootballJersey } from './FootballJersey';
 import { TeamLogo } from './TeamLogo';
+import { hasPublishedLineup } from '../lib/matchTime';
 
 export const TacticalPitch: React.FC = () => {
   const {
@@ -29,6 +30,7 @@ export const TacticalPitch: React.FC = () => {
   if (!selectedMatch) return null;
 
   const canWrite = canWriteMatchReview(selectedMatch);
+  const officialXi = hasPublishedLineup(selectedMatch);
 
   // Filter players based on teamTab and positionFilter (search engine results do not affect pitch layout)
   const filterPlayer = (player: Player) => {
@@ -186,7 +188,7 @@ export const TacticalPitch: React.FC = () => {
   return (
     <div className="w-full">
       {/* Tactical Pitch Container */}
-      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-3 sm:p-5 shadow-md overflow-hidden">
+      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-3 sm:p-5 shadow-md overflow-hidden dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
         
         {/* Pitch Top Bar info & "Genel Puanlamalar" Toggle Button */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3 px-1">
@@ -263,6 +265,18 @@ export const TacticalPitch: React.FC = () => {
           </div>
         </div>
 
+        {selectedMatch.status === 'UPCOMING' && (
+          <div className={`mb-3 px-3 py-2 rounded-2xl border text-[11px] sm:text-xs font-bold ${
+            officialXi
+              ? 'bg-violet-50 text-violet-900 border-violet-200'
+              : 'bg-slate-50 text-slate-600 border-slate-200'
+          }`}>
+            {officialXi
+              ? 'Resmi ilk 11 yayınlandı.'
+              : 'Resmi ilk 11 henüz açıklanmadı. Yayınlanınca otomatik sahaya yazılacak.'}
+          </div>
+        )}
+
         {/* Football Grass Pitch Arena */}
         <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[260px] sm:min-h-[480px] md:min-h-[540px] rounded-2xl overflow-hidden shadow-inner border-2 border-emerald-600 bg-gradient-to-r from-emerald-600 via-emerald-650 to-emerald-600 select-none">
           
@@ -329,6 +343,14 @@ export const TacticalPitch: React.FC = () => {
               <span className="font-black text-xs sm:text-sm text-white tracking-wider truncate">
                 {selectedMatch.awayTeam.name.toUpperCase()} ({awayStarters.length})
               </span>
+            </div>
+          )}
+
+          {selectedMatch.status === 'UPCOMING' && homeStarters.length === 0 && awayStarters.length === 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-6">
+              <div className="bg-slate-950/70 text-white text-center text-[11px] sm:text-sm font-black px-4 py-3 rounded-2xl border border-white/20 max-w-md">
+                İlk 11 henüz yayınlanmadı
+              </div>
             </div>
           )}
 

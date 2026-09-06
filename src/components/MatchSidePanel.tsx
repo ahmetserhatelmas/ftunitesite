@@ -5,6 +5,7 @@ import { Player } from '../types';
 import { FootballJersey } from './FootballJersey';
 import { LeagueStandingsCard } from './LeagueStandingsCard';
 import { TeamLogo } from './TeamLogo';
+import { StadiumBackdrop } from './StadiumBackdrop';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
 import { isMatchLive } from '../lib/matchTime';
@@ -68,9 +69,10 @@ export const MatchSidePanel: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Quick Team Comparison Card */}
-      <div className={`bg-white rounded-3xl p-4 shadow-sm relative overflow-hidden ${
-        isLive ? 'border-2 border-rose-400 ring-1 ring-rose-300' : 'border-2 border-emerald-100'
+      <div className={`rounded-3xl p-4 shadow-sm relative overflow-hidden text-white ${
+        isLive ? 'border-2 border-rose-400 ring-1 ring-rose-300' : 'border-2 border-white/15'
       }`}>
+        <StadiumBackdrop variant="night" overlayClassName="bg-slate-950/70" />
         {isLive && (
           <div className="absolute top-0 right-0">
             <span className="bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-bl-xl shadow-xs flex items-center gap-1 animate-pulse border-b border-l border-rose-300 font-mono">
@@ -80,47 +82,47 @@ export const MatchSidePanel: React.FC = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-emerald-50 text-xs pr-16">
-          <span className="font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="relative z-[1] flex items-center justify-between pb-2.5 mb-3 border-b border-white/15 text-xs pr-16">
+          <span className="font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
             <span>Tribün Not Ortalamaları</span>
           </span>
-          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+          <span className="text-[11px] font-bold text-emerald-200 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-400/40">
             {matchReviews.length} Yorum
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-center">
+        <div className="relative z-[1] grid grid-cols-2 gap-3 text-center">
           {/* Home Avg */}
-          <div className="bg-slate-50/80 border border-slate-200/80 p-3 rounded-2xl">
+          <div className="bg-slate-950/55 border border-white/15 p-3 rounded-2xl backdrop-blur-[2px]">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <TeamLogo team={selectedMatch.homeTeam} size="xs" shape="circle" showShadow={false} />
-              <span className="text-xs font-black text-slate-800 truncate">{selectedMatch.homeTeam.shortName}</span>
+              <span className="text-xs font-black text-white truncate">{selectedMatch.homeTeam.shortName}</span>
             </div>
-            <div className="text-2xl font-black text-slate-900 font-mono flex items-center justify-center gap-1">
+            <div className="text-2xl font-black text-white font-mono flex items-center justify-center gap-1">
               <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
               <span>{avgHome}</span>
             </div>
-            <span className="text-[10px] text-slate-500 font-bold">Takım Notu</span>
+            <span className="text-[10px] text-white/60 font-bold">Takım Notu</span>
           </div>
 
           {/* Away Avg */}
-          <div className="bg-slate-50/80 border border-slate-200/80 p-3 rounded-2xl">
+          <div className="bg-slate-950/55 border border-white/15 p-3 rounded-2xl backdrop-blur-[2px]">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <TeamLogo team={selectedMatch.awayTeam} size="xs" shape="circle" showShadow={false} />
-              <span className="text-xs font-black text-slate-800 truncate">{selectedMatch.awayTeam.shortName}</span>
+              <span className="text-xs font-black text-white truncate">{selectedMatch.awayTeam.shortName}</span>
             </div>
-            <div className="text-2xl font-black text-slate-900 font-mono flex items-center justify-center gap-1">
+            <div className="text-2xl font-black text-white font-mono flex items-center justify-center gap-1">
               <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
               <span>{avgAway}</span>
             </div>
-            <span className="text-[10px] text-slate-500 font-bold">Takım Notu</span>
+            <span className="text-[10px] text-white/60 font-bold">Takım Notu</span>
           </div>
         </div>
       </div>
 
       {/* Main Side Panel Widget with Tabs */}
-      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-4 shadow-sm">
+      <div className="bg-white border-2 border-emerald-100 rounded-3xl p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
         
         {/* Navigation Tabs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl text-[11px] font-bold mb-3.5">

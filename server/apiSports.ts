@@ -74,6 +74,11 @@ export async function fetchFixturesByRound(season: number, round: string): Promi
   return Array.isArray(result.response) ? result.response : [];
 }
 
+export async function fetchFixtureLineups(fixtureId: number): Promise<any[]> {
+  const result = await apiSportsGet<any[]>(`/fixtures/lineups?fixture=${fixtureId}`);
+  return Array.isArray(result.response) ? result.response : [];
+}
+
 export async function fetchFixturesDetailed(ids: number[]): Promise<any[]> {
   const unique = [...new Set(ids.filter(Boolean))];
   const chunks: number[][] = [];

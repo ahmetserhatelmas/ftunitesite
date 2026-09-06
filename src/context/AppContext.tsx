@@ -19,7 +19,7 @@ import {
 import { deleteWebReview, ensureWebProfile, loadWebReviews, saveWebReview } from '../lib/webReviews';
 import { isOwnReview, replaceReviewsFromCloud, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
-import { deriveActiveWeek, isMatchLive, matchHasStarted, matchNeedsScoreRefresh, normalizePersonName } from '../lib/matchTime';
+import { deriveActiveWeek, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, matchNeedsScoreRefresh, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -611,15 +611,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const pullLiveWeek = async () => {
-      const due = matchesRef.current.some((m) => matchNeedsScoreRefresh(m));
-      if (!due) return;
+      const dueWeeks = [...new Set(
+        matchesRef.current
+          .filter((m) => matchNeedsScoreRefresh(m) || matchNeedsLineupRefresh(m))
+          .map((m) => m.week)
+          .filter((week) => week > 0),
+      )];
+      if (!dueWeeks.length) return;
       try {
-        const res = await fetch('/api/live/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ week: currentWeek }),
-        });
-        if (res.ok) applyLivePayload(await res.json());
+        for (const week of dueWeeks) {
+          const res = await fetch('/api/live/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ week }),
+          });
+          if (res.ok) applyLivePayload(await res.json());
+        }
       } catch {
         // ignore
       }
@@ -738,7 +745,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (hydratedWeeks.current.has(selectedWeek)) return;
     const weekMatches = matches.filter((m) => m.week === selectedWeek);
     const needsDetail = weekMatches.some(
-      (m) => (m.status === 'FT' || m.status === 'LIVE') && m.homePlayers.length === 0,
+      (m) =>
+        ((m.status === 'FT' || m.status === 'LIVE') && m.homePlayers.length === 0) ||
+        matchNeedsLineupRefresh(m),
     );
     if (needsDetail) {
       hydratedWeeks.current.add(selectedWeek);

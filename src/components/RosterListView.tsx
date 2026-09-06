@@ -48,6 +48,12 @@ export const RosterListView: React.FC = () => {
 
   return (
     <div className="w-full space-y-4">
+      {selectedMatch.status === 'UPCOMING' && allMatchPlayers.length === 0 && (
+        <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl px-4 py-3 text-[12px] sm:text-sm font-bold text-slate-600">
+          Resmi ilk 11 henüz açıklanmadı. Yayınlanınca kadro burada görünecek.
+        </div>
+      )}
+
       {/* Technical Directors Section */}
       {managers.length > 0 && positionFilter === 'ALL' && (
         <div className="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 border border-slate-800 shadow-sm">

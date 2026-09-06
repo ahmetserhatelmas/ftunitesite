@@ -267,6 +267,8 @@ export function transformFixture(raw: any): Match {
     awayPlayers: buildPlayers(awayLineup, awayTeam.id, false, stats),
     events: buildEvents(raw.events || [], homeTeam.id, awayTeam.id, raw.teams?.home?.id, raw.teams?.away?.id),
     viewsCount: 0,
+    lineupConfirmed:
+      (homeLineup?.startXI || []).length >= 11 && (awayLineup?.startXI || []).length >= 11,
   };
 }
 

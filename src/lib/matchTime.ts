@@ -80,6 +80,53 @@ export function isMatchLive(match?: { status?: string; kickoffAt?: string | null
   return hasKickoffStarted(match.kickoffAt) || hasKickoffStarted(match.date);
 }
 
+export function publishedLineupSides(match?: {
+  lineupConfirmed?: boolean;
+  homePlayers?: Array<{ isStarting?: boolean }>;
+  awayPlayers?: Array<{ isStarting?: boolean }>;
+} | null): { home: boolean; away: boolean; any: boolean; both: boolean } {
+  if (!match) return { home: false, away: false, any: false, both: false };
+  const home = (match.homePlayers || []).filter((player) => player.isStarting).length >= 11;
+  const away = (match.awayPlayers || []).filter((player) => player.isStarting).length >= 11;
+  const both = Boolean(match.lineupConfirmed) || (home && away);
+  return { home, away, any: home || away, both };
+}
+
+export function hasPublishedLineup(match?: {
+  lineupConfirmed?: boolean;
+  homePlayers?: Array<{ isStarting?: boolean }>;
+  awayPlayers?: Array<{ isStarting?: boolean }>;
+} | null): boolean {
+  return publishedLineupSides(match).any;
+}
+
+/** Resmi ilk 11 gelmiş olsa bile maç başlayana kadar tekrar çek — son dakika değişir. */
+export function matchNeedsLineupRefresh(
+  match?: {
+    status?: string;
+    kickoffAt?: string | null;
+    date?: string;
+    lineupConfirmed?: boolean;
+    homePlayers?: Array<{ isStarting?: boolean }>;
+    awayPlayers?: Array<{ isStarting?: boolean }>;
+  } | null,
+  aheadMs = 3 * 60 * 60 * 1000,
+): boolean {
+  if (!match || match.status === 'FT') return false;
+
+  const sides = publishedLineupSides(match);
+  const kickoff = match.kickoffAt
+    ? new Date(match.kickoffAt).getTime()
+    : parseReviewTimestamp(match.date);
+  if (!kickoff || Number.isNaN(kickoff)) {
+    return match.status === 'LIVE' && !sides.both;
+  }
+
+  const untilKickoff = kickoff - Date.now();
+  if (untilKickoff <= aheadMs && untilKickoff >= -10 * 60 * 1000) return true;
+  return match.status === 'LIVE' && !sides.both;
+}
+
 /** Canlı + bitiş sonrası VAR/skor düzeltmesi için birkaç saat daha senkron. */
 export function matchNeedsScoreRefresh(
   match?: { status?: string; kickoffAt?: string | null; date?: string } | null,

@@ -25,7 +25,7 @@ function MainAppContent() {
   const { activeView, registeredUserCount } = useApp();
 
   return (
-    <div className="min-h-screen max-w-[100vw] overflow-x-hidden bg-slate-50 text-slate-800 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
+    <div className="min-h-screen max-w-[100vw] overflow-x-hidden bg-slate-50 text-slate-800 dark:bg-[#0b1220] dark:text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
       {/* Navigation Header */}
       <Header />
 
@@ -69,17 +69,17 @@ function MainAppContent() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-100 bg-white py-5 px-4 text-xs text-slate-500 shadow-inner">
+      <footer className="border-t border-emerald-100 bg-white py-5 px-4 text-xs text-slate-500 shadow-inner dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
         <div className="w-full max-w-[1760px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <img src="/logo.png" alt="Futbol Unite" className="w-10 h-10 object-contain shrink-0 bg-transparent" />
-            <span className="font-black text-slate-800 tracking-tight shrink-0">FUTBOL UNITE</span>
+            <span className="font-black text-slate-800 tracking-tight shrink-0 dark:text-slate-100">FUTBOL UNITE</span>
             <span className="hidden md:inline">—</span>
-            <span className="hidden md:inline font-medium text-slate-600">Trendyol Süper Lig Canlı Futbolcu Performans & Taraftar Yorum Platformu</span>
+            <span className="hidden md:inline font-medium text-slate-600 dark:text-slate-400">Trendyol Süper Lig Canlı Futbolcu Performans & Taraftar Yorum Platformu</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-600">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-bold text-slate-600 dark:text-slate-400">
             {registeredUserCount != null && (
-              <span className="flex items-center gap-1 text-emerald-800">
+              <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 {registeredUserCount.toLocaleString('tr-TR')} kayıtlı kullanıcı
               </span>
