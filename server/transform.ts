@@ -162,8 +162,18 @@ function isCancelledGoal(type?: string, detail?: string, comments?: string): boo
   );
 }
 
+function cancellationReason(detail?: string, comments?: string): string {
+  const blob = `${detail || ''} ${comments || ''}`.toLowerCase();
+  if (blob.includes('offside') || blob.includes('ofsayt')) return 'Ofsayt';
+  if (blob.includes('hand')) return 'Elle oynama';
+  if (blob.includes('foul') || blob.includes('faul')) return 'Faul';
+  if (blob.includes('offence') || blob.includes('offense') || blob.includes('ihlal')) return 'İhlal';
+  const extra = [detail, comments].filter(Boolean).join(' • ');
+  return extra || 'VAR';
+}
+
 function mapEventType(type?: string, detail?: string, comments?: string): MatchEvent['type'] | null {
-  if (isCancelledGoal(type, detail, comments)) return null;
+  if (isCancelledGoal(type, detail, comments)) return 'goal-cancelled';
   const t = (type || '').toLowerCase();
   const d = (detail || '').toLowerCase();
   if (t === 'var') return null;
@@ -176,6 +186,33 @@ function mapEventType(type?: string, detail?: string, comments?: string): MatchE
   return null;
 }
 
+function dropReplacedGoals(events: MatchEvent[]): MatchEvent[] {
+  const cancelled = events.filter((event) => event.type === 'goal-cancelled');
+  if (!cancelled.length) return events;
+
+  const kept = events.filter((event) => {
+    if (event.type === 'goal-cancelled') return true;
+    const scored = event.type === 'goal' || event.type === 'penalty' || event.type === 'own-goal' || event.type === 'assist';
+    if (!scored) return true;
+    return !cancelled.some((row) => {
+      if (row.teamId !== event.teamId) return false;
+      if (Math.abs(row.minute - event.minute) > 5) return false;
+      if (event.type === 'assist') return true;
+      return row.playerId === event.playerId || row.playerName === event.playerName || row.playerName === 'Oyuncu';
+    });
+  });
+
+  return kept.map((event) => {
+    if (event.type !== 'goal-cancelled' || event.playerName !== 'Oyuncu') return event;
+    const source = events.find((row) => (
+      (row.type === 'goal' || row.type === 'penalty' || row.type === 'own-goal')
+      && row.teamId === event.teamId
+      && Math.abs(row.minute - event.minute) <= 5
+    ));
+    return source ? { ...event, playerId: source.playerId, playerName: source.playerName } : event;
+  });
+}
+
 function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, homeApiId: number, awayApiId: number): MatchEvent[] {
   const events: MatchEvent[] = [];
   for (const item of rawEvents || []) {
@@ -183,13 +220,16 @@ function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, h
     const type = mapEventType(item.type, item.detail, item.comments);
     if (!type) continue;
     const playerName = item.player?.name || 'Oyuncu';
+    const cancelled = type === 'goal-cancelled';
     events.push({
       minute: toNumber(item.time?.elapsed),
       type,
       playerId: item.player?.id ? `p-${item.player.id}` : `p-${teamId}-${playerName}`,
       playerName,
       teamId,
-      detail: [item.detail, item.assist?.name ? `${item.assist.name} asisti` : '', item.comments].filter(Boolean).join(' • '),
+      detail: cancelled
+        ? `Gol iptal edildi • ${cancellationReason(item.detail, item.comments)}`
+        : [item.detail, item.assist?.name ? `${item.assist.name} asisti` : '', item.comments].filter(Boolean).join(' • '),
     });
     if ((item.type || '').toLowerCase() === 'subst' && item.assist?.name) {
       events.push({
@@ -205,7 +245,7 @@ function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, h
       (item.type || '').toLowerCase() === 'goal' &&
       item.assist?.name &&
       !String(item.detail || '').toLowerCase().includes('own') &&
-      !isCancelledGoal(item.type, item.detail, item.comments)
+      !cancelled
     ) {
       events.push({
         minute: toNumber(item.time?.elapsed),
@@ -217,7 +257,7 @@ function buildEvents(rawEvents: any[], homeTeamId: string, awayTeamId: string, h
       });
     }
   }
-  return events;
+  return dropReplacedGoals(events);
 }
 
 function collectStats(rawPlayers: any[]): Map<number, { photo?: string; name?: string; stats: PlayerStats; rating: number }> {

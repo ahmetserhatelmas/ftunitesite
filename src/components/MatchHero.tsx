@@ -162,24 +162,34 @@ export const MatchHero: React.FC = () => {
         {selectedMatch.events && selectedMatch.events.length > 0 && (
           <div className="relative z-[1] mt-4 pt-3 border-t border-white/15 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-1.5 sm:gap-2 text-xs">
             <span className="text-white/50 font-bold text-[11px] uppercase mr-1">Önemli Anlar:</span>
-            {selectedMatch.events.map((event, idx) => (
+            {selectedMatch.events.map((event, idx) => {
+              const cancelled = event.type === 'goal-cancelled';
+              return (
               <div
                 key={idx}
-                className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full text-slate-700 text-[11px] shadow-sm"
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] shadow-sm ${
+                  cancelled
+                    ? 'bg-rose-50 border border-rose-200 text-rose-800'
+                    : 'bg-slate-50 border border-slate-200 text-slate-700'
+                }`}
               >
-                <span className="font-mono font-black text-emerald-600">{event.minute}'</span>
+                <span className={`font-mono font-black ${cancelled ? 'text-rose-600' : 'text-emerald-600'}`}>{event.minute}'</span>
                 <span>
                   {event.type === 'goal' && '⚽'}
+                  {cancelled && '🚫⚽'}
                   {event.type === 'yellow-card' && '🟨'}
                   {event.type === 'red-card' && '🟥'}
                   {event.type === 'penalty' && '🎯'}
                 </span>
-                <span className="font-bold text-slate-900">{event.playerName}</span>
-                {event.detail && (
+                <span className={`font-bold ${cancelled ? 'text-rose-900 line-through' : 'text-slate-900'}`}>{event.playerName}</span>
+                {cancelled ? (
+                  <span className="text-rose-700 text-[10px] font-black uppercase">İptal edildi</span>
+                ) : event.detail ? (
                   <span className="text-slate-500 text-[10px]">({event.detail})</span>
-                )}
+                ) : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

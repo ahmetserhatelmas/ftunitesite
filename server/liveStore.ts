@@ -106,7 +106,8 @@ function mergeMatches(incoming: Match[]): void {
       (previous.status === 'LIVE' || previous.status === 'FT');
     const incomingXi = publishedLineupSides(match);
     const previousXi = publishedLineupSides(previous);
-    const useIncomingEvents = match.events.length > 0 || incomingXi.any;
+    const scoreChanged = match.homeScore !== previous.homeScore || match.awayScore !== previous.awayScore;
+    const useIncomingEvents = match.events.length > 0 || incomingXi.any || scoreChanged;
     const body = incomingDepth >= previousDepth ? match : {
       ...previous,
       ...match,

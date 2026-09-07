@@ -427,29 +427,45 @@ export const MatchSidePanel: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs"
+                      className={`flex items-center justify-between gap-2 p-2.5 rounded-2xl text-xs ${
+                        ev.type === 'goal-cancelled'
+                          ? 'bg-rose-50 border border-rose-200'
+                          : 'bg-slate-50 border border-slate-200'
+                      }`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-xl bg-slate-900 text-white font-mono font-black text-xs flex items-center justify-center shrink-0">
+                        <span className={`w-8 h-8 rounded-xl font-mono font-black text-xs flex items-center justify-center shrink-0 ${
+                          ev.type === 'goal-cancelled' ? 'bg-rose-700 text-white' : 'bg-slate-900 text-white'
+                        }`}>
                           {ev.minute}'
                         </span>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm">
                               {ev.type === 'goal' && '⚽'}
+                              {ev.type === 'goal-cancelled' && '🚫⚽'}
                               {ev.type === 'yellow-card' && '🟨'}
                               {ev.type === 'red-card' && '🟥'}
                               {ev.type === 'penalty' && '🎯'}
                             </span>
                             <span
                               onClick={() => evPlayer && openPlayerModal(evPlayer, selectedMatch.id)}
-                              className="font-black text-slate-900 hover:text-emerald-700 cursor-pointer"
+                              className={`font-black cursor-pointer ${
+                                ev.type === 'goal-cancelled'
+                                  ? 'text-rose-900 line-through hover:text-rose-700'
+                                  : 'text-slate-900 hover:text-emerald-700'
+                              }`}
                             >
                               {ev.playerName}
                             </span>
+                            {ev.type === 'goal-cancelled' && (
+                              <span className="text-[10px] font-black uppercase text-rose-700">İptal edildi</span>
+                            )}
                           </div>
                           {ev.detail && (
-                            <p className="text-[10px] text-slate-500 font-medium">{ev.detail}</p>
+                            <p className={`text-[10px] font-medium ${
+                              ev.type === 'goal-cancelled' ? 'text-rose-700' : 'text-slate-500'
+                            }`}>{ev.detail}</p>
                           )}
                         </div>
                       </div>

@@ -135,7 +135,7 @@ export interface Team {
 
 export interface MatchEvent {
   minute: number;
-  type: 'goal' | 'yellow-card' | 'red-card' | 'sub-in' | 'sub-out' | 'assist' | 'own-goal' | 'penalty';
+  type: 'goal' | 'goal-cancelled' | 'yellow-card' | 'red-card' | 'sub-in' | 'sub-out' | 'assist' | 'own-goal' | 'penalty';
   playerId: string;
   playerName: string;
   teamId: string;
