@@ -242,8 +242,8 @@ export function livePlayClock(match?: LiveClockMatch, now = Date.now()): {
     const origin = syncedAt && !Number.isNaN(syncedAt) ? syncedAt : now;
     const driftSec = Math.max(0, Math.floor((now - origin) / 1000));
     return {
-      minute: Math.min(official, 130),
-      seconds: Math.min(driftSec, 59),
+      minute: Math.min(official + Math.floor(driftSec / 60), 130),
+      seconds: driftSec % 60,
       halfTime: false,
     };
   }
