@@ -29,7 +29,8 @@ import { parseRoundWeek } from './teamCatalog';
 import {
   deriveActiveWeek,
   hasKickoffStarted,
-  inferredLiveMinute,
+  applyLiveClock,
+  isHalfTime,
   isMatchLive,
   matchNeedsAvailabilityRefresh,
   matchNeedsLineupRefresh,
@@ -141,7 +142,14 @@ function mergeMatches(incoming: Match[]): void {
       awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
       minute: match.minute ?? previous.minute,
       liveSeconds: match.liveSeconds ?? previous.liveSeconds,
-      period: match.period || previous.period,
+      period: (() => {
+        const next = match.period || previous.period;
+        const kickoff = match.kickoffAt || previous.kickoffAt;
+        if (next === 'HT' && !isHalfTime({ period: 'HT', kickoffAt: kickoff, date: match.date || previous.date, minute: match.minute ?? previous.minute })) {
+          return '2H';
+        }
+        return next;
+      })(),
     });
   }
   store.matches = sortMatches([...map.values()]);
@@ -216,7 +224,7 @@ function withStartedStatuses(matches: Match[]): Match[] {
       : { ...match, homePlayers, awayPlayers };
     if (placed.status === 'FT') return placed;
     if (!isMatchLive(placed) && placed.status !== 'LIVE') return placed;
-    return { ...placed, status: 'LIVE' as const, minute: inferredLiveMinute(placed) };
+    return applyLiveClock(placed);
   });
 }
 

@@ -19,7 +19,7 @@ import {
 import { deleteWebReview, ensureWebProfile, loadWebReviews, saveWebReview } from '../lib/webReviews';
 import { isOwnReview, replaceReviewsFromCloud, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
-import { deriveActiveWeek, inferredLiveMinute, isHalfTime, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, normalizePersonName } from '../lib/matchTime';
+import { applyLiveClock, deriveActiveWeek, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -535,24 +535,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const applyLivePayload = (data: any, fallbackToMock = false, opts?: { keepWeek?: boolean }) => {
     let started: Match[] | undefined;
     if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
-      started = (data.matches as Match[]).map((match) => {
-        if (match.status === 'FT' || !isMatchLive(match)) return match;
-        return { ...match, status: 'LIVE' as const, minute: inferredLiveMinute(match) };
-      });
-      setMatches((prev) => {
-        const prevById = new Map(prev.map((match) => [match.id, match]));
-        return started!.map((match) => {
-          const old = prevById.get(match.id);
-          if (
-            old?.status === 'LIVE'
-            && match.status === 'LIVE'
-            && old.minute === match.minute
-          ) {
-            return { ...match, liveSeconds: old.liveSeconds };
-          }
-          return match;
-        });
-      });
+      started = (data.matches as Match[]).map((match) => applyLiveClock(match));
+      setMatches(started);
       for (const match of started) {
         if (match.homePlayers?.length || match.awayPlayers?.length) {
           hydratedWeeks.current.add(match.week);
@@ -683,25 +667,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updated = prevMatches.map((m) => {
           if (m.status !== 'FT' && isMatchLive(m)) {
             hasLive = true;
-            const floor = inferredLiveMinute(m);
-            if (isHalfTime(m)) {
-              return { ...m, status: 'LIVE' as const, minute: 45, liveSeconds: 0 };
-            }
-            const currentMin = typeof m.minute === 'number' ? m.minute : floor;
-            const currentSec = typeof m.liveSeconds === 'number' ? m.liveSeconds : 0;
-            let nextMin = Math.max(currentMin, floor);
-            let nextSec = currentSec + 1;
-            if (floor > currentMin) nextSec = 0;
-            if (nextSec >= 60) {
-              nextSec = 0;
-              nextMin = Math.min(nextMin + 1, 130);
-            }
-            return {
-              ...m,
-              status: 'LIVE' as const,
-              minute: nextMin,
-              liveSeconds: nextSec,
-            };
+            return applyLiveClock(m);
           }
           return m;
         });
