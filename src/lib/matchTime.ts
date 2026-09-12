@@ -141,7 +141,7 @@ export function matchNeedsLineupRefresh(
   }
 
   const untilKickoff = kickoff - Date.now();
-  if (untilKickoff <= aheadMs && untilKickoff >= -10 * 60 * 1000) return true;
+  if (untilKickoff <= aheadMs && untilKickoff >= -20 * 60 * 1000) return true;
   return match.status === 'LIVE' && !sides.both;
 }
 
@@ -164,25 +164,50 @@ export function matchNeedsAvailabilityRefresh(
   return untilKickoff > 0 && untilKickoff <= aheadMs;
 }
 
-/** API dakikası yoksa veya 1'de takılıysa kickoff'tan canlı dakika. */
+function minutesSinceKickoff(
+  match?: { kickoffAt?: string | null; date?: string } | null,
+  now = Date.now(),
+): number {
+  const kickoff = match?.kickoffAt
+    ? new Date(match.kickoffAt).getTime()
+    : parseReviewTimestamp(match?.date);
+  if (!kickoff || Number.isNaN(kickoff)) return 0;
+  return Math.max(0, Math.floor((now - kickoff) / 60_000));
+}
+
+/** Devre arası (~15 dk) düşülmüş kickoff saati tahmini. */
+export function estimatedMinuteFromKickoff(fromKick: number): number {
+  if (fromKick <= 0) return 1;
+  if (fromKick <= 48) return Math.min(fromKick, 48);
+  if (fromKick < 63) return 45;
+  return Math.min(fromKick - 15, 130);
+}
+
+export function isLikelyHalfTime(
+  match?: { kickoffAt?: string | null; date?: string } | null,
+  now = Date.now(),
+): boolean {
+  const fromKick = minutesSinceKickoff(match, now);
+  return fromKick > 48 && fromKick < 63;
+}
+
+/** API dakikası yoksa, 1'de takılıysa veya senkron gecikmişse kickoff'tan canlı dakika. */
 export function inferredLiveMinute(match?: {
   status?: string;
   minute?: number | string;
   kickoffAt?: string | null;
   date?: string;
-} | null): number {
-  const kickoff = match?.kickoffAt
-    ? new Date(match.kickoffAt).getTime()
-    : parseReviewTimestamp(match?.date);
-  const fromKick = kickoff && !Number.isNaN(kickoff)
-    ? Math.max(1, Math.floor((Date.now() - kickoff) / 60_000))
-    : 0;
+} | null, now = Date.now()): number {
+  const fromKick = minutesSinceKickoff(match, now);
+  const estimated = fromKick > 0 ? estimatedMinuteFromKickoff(fromKick) : 0;
   const raw = match?.minute;
   const apiMin = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
   const hasApi = Number.isFinite(apiMin) && apiMin > 0;
-  if (hasApi && apiMin > 1) return Math.min(apiMin, 130);
-  if (fromKick > 2) return Math.min(fromKick, 130);
-  return hasApi ? Math.min(apiMin, 130) : Math.max(1, fromKick || 1);
+  if (hasApi && apiMin > 1 && apiMin + 3 >= estimated) {
+    return Math.min(apiMin, 130);
+  }
+  if (estimated > 0) return estimated;
+  return hasApi ? Math.min(apiMin, 130) : 1;
 }
 
 /** Canlı + bitiş sonrası VAR/skor düzeltmesi için birkaç saat daha senkron. */

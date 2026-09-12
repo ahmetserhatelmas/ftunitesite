@@ -113,3 +113,64 @@ export function placeStartingXi(starters: LineupGridSlot[], isHome: boolean): Ar
 export function fallbackPositionLabel(pos?: string | null): string {
   return fallbackRole(pos);
 }
+
+const CATEGORY_ORDER = ['GK', 'DEF', 'MID', 'FWD'] as const;
+
+type PlaceablePlayer = {
+  id?: string;
+  isStarting?: boolean;
+  category?: string;
+  position?: string;
+  pitchPosition?: { x: number; y: number };
+};
+
+function categoryOf(player: PlaceablePlayer): (typeof CATEGORY_ORDER)[number] {
+  if (player.category === 'GK' || player.position === 'GK') return 'GK';
+  if (player.category === 'DEF') return 'DEF';
+  if (player.category === 'MID') return 'MID';
+  return 'FWD';
+}
+
+/** Dizilişi ev/deplasman yönüne göre yeniden yerleştir — son maçın koordinatı ters kalmasın. */
+export function layoutStartingXi<T extends PlaceablePlayer>(players: T[], isHome: boolean): T[] {
+  const starters = players.filter((player) => player.isStarting);
+  if (!starters.length) return players;
+
+  const groups = new Map<(typeof CATEGORY_ORDER)[number], T[]>();
+  for (const key of CATEGORY_ORDER) groups.set(key, []);
+  for (const player of starters) {
+    groups.get(categoryOf(player))!.push(player);
+  }
+
+  const rows = CATEGORY_ORDER.map((key) => groups.get(key)!).filter((row) => row.length);
+  const placed = new Map<T, { x: number; y: number }>();
+  rows.forEach((row, rowIndex) => {
+    row.forEach((player, index) => {
+      const yIndex = isHome ? index : row.length - 1 - index;
+      placed.set(player, {
+        x: rowX(rowIndex + 1, rows.length, isHome),
+        y: laneY(yIndex, row.length),
+      });
+    });
+  });
+
+  return players.map((player) => {
+    const spot = placed.get(player);
+    return spot ? { ...player, pitchPosition: spot } : player;
+  });
+}
+
+function keeperIsOnWrongHalf(players: PlaceablePlayer[], isHome: boolean): boolean {
+  const keeper = players.find((player) => player.isStarting && categoryOf(player) === 'GK');
+  const x = keeper?.pitchPosition?.x;
+  if (typeof x !== 'number') return false;
+  return isHome ? x > 50 : x < 50;
+}
+
+export function ensurePitchPositions<T extends PlaceablePlayer>(players: T[], isHome: boolean): T[] {
+  const starters = players.filter((player) => player.isStarting);
+  if (!starters.length) return players;
+  const missing = starters.some((player) => player.pitchPosition?.x == null);
+  if (!missing && !keeperIsOnWrongHalf(starters, isHome)) return players;
+  return layoutStartingXi(players, isHome);
+}

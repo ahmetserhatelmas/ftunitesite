@@ -4,6 +4,7 @@ import { Player } from '../types';
 import { MessageSquare, Star, Crown, Shield, BarChart3, Eye, EyeOff, Sparkles, CheckCircle2, Briefcase, ChevronRight } from 'lucide-react';
 import { FootballJersey } from './FootballJersey';
 import { TeamLogo } from './TeamLogo';
+import { ensurePitchPositions } from '../lib/lineupLayout';
 import { hasPredictedLineup, hasPublishedLineup } from '../lib/matchTime';
 
 export const TacticalPitch: React.FC = () => {
@@ -41,12 +42,14 @@ export const TacticalPitch: React.FC = () => {
     return true;
   };
 
-  const homeStarters = selectedMatch.homePlayers.filter((p) => p.isStarting);
-  const awayStarters = selectedMatch.awayPlayers.filter((p) => p.isStarting);
+  const homePlayers = ensurePitchPositions(selectedMatch.homePlayers, true);
+  const awayPlayers = ensurePitchPositions(selectedMatch.awayPlayers, false);
+  const homeStarters = homePlayers.filter((p) => p.isStarting);
+  const awayStarters = awayPlayers.filter((p) => p.isStarting);
 
   // Bench players filtered by active team
-  const homeSubs = selectedMatch.homePlayers.filter((p) => !p.isStarting);
-  const awaySubs = selectedMatch.awayPlayers.filter((p) => !p.isStarting);
+  const homeSubs = homePlayers.filter((p) => !p.isStarting);
+  const awaySubs = awayPlayers.filter((p) => !p.isStarting);
 
   const visibleSubs = (
     teamTab === 'home'

@@ -37,6 +37,7 @@ import {
   publishedLineupSides,
 } from '../src/lib/matchTime';
 import { predictSide } from '../src/lib/predictedLineup';
+import { ensurePitchPositions } from '../src/lib/lineupLayout';
 import { resolveUnavailable } from './availability';
 
 interface LiveSnapshot {
@@ -207,9 +208,14 @@ function fixtureApiId(matchId: string): number | null {
 
 function withStartedStatuses(matches: Match[]): Match[] {
   return matches.map((match) => {
-    if (match.status === 'FT') return match;
-    if (!isMatchLive(match) && match.status !== 'LIVE') return match;
-    return { ...match, status: 'LIVE' as const, minute: inferredLiveMinute(match) };
+    const homePlayers = ensurePitchPositions(match.homePlayers, true);
+    const awayPlayers = ensurePitchPositions(match.awayPlayers, false);
+    const placed = homePlayers === match.homePlayers && awayPlayers === match.awayPlayers
+      ? match
+      : { ...match, homePlayers, awayPlayers };
+    if (placed.status === 'FT') return placed;
+    if (!isMatchLive(placed) && placed.status !== 'LIVE') return placed;
+    return { ...placed, status: 'LIVE' as const, minute: inferredLiveMinute(placed) };
   });
 }
 
@@ -237,9 +243,8 @@ export async function hydrateWeek(week: number): Promise<void> {
   const withLineups = await Promise.all(
     detailed.map(async (raw) => {
       const mapped = transformFixture(raw);
-      if (!matchNeedsLineupRefresh(mapped)) return raw;
-      const alreadyBoth = publishedLineupSides(mapped).both;
-      if (alreadyBoth && mapped.status !== 'UPCOMING') return raw;
+      const previous = store.matches.find((item) => item.id === mapped.id);
+      if (!matchNeedsLineupRefresh(previous || mapped)) return raw;
       const lineups = await fetchFixtureLineups(raw.fixture?.id);
       if (!lineups.length) return raw;
       return { ...raw, lineups };
@@ -366,21 +371,21 @@ async function applyPredictedLineups(week: number): Promise<void> {
       kickoffMs: match.kickoffAt ? new Date(match.kickoffAt).getTime() : Date.now(),
     });
 
-    const buildSide = (teamId: string, current: Player[]) => {
+    const buildSide = (teamId: string, current: Player[], isHome: boolean) => {
       const squad = lastSquadForTeam(teamId);
       if (!squad.length) return current;
-      return predictSide(squad, unavailable);
+      return predictSide(squad, unavailable, isHome);
     };
 
     const officialSides = publishedLineupSides(match);
     if (officialSides.both) continue;
 
     const homePlayers = officialSides.home
-      ? match.homePlayers
-      : buildSide(match.homeTeam.id, match.homePlayers);
+      ? ensurePitchPositions(match.homePlayers, true)
+      : buildSide(match.homeTeam.id, match.homePlayers, true);
     const awayPlayers = officialSides.away
-      ? match.awayPlayers
-      : buildSide(match.awayTeam.id, match.awayPlayers);
+      ? ensurePitchPositions(match.awayPlayers, false)
+      : buildSide(match.awayTeam.id, match.awayPlayers, false);
 
     const homeStarters = homePlayers.filter((player) => player.isStarting).length;
     const awayStarters = awayPlayers.filter((player) => player.isStarting).length;

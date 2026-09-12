@@ -1,6 +1,6 @@
 import { League, Manager, Match, MatchEvent, Player, PlayerStats, PositionCategory, Team } from '../src/types';
 import { StandingTeam } from '../src/data/superLigStandings';
-import { fallbackPositionLabel, placeStartingXi } from '../src/lib/lineupLayout';
+import { ensurePitchPositions, fallbackPositionLabel, placeStartingXi } from '../src/lib/lineupLayout';
 import { parseRoundWeek, resolveClubStyle } from './teamCatalog';
 import { formatMatchKickoff, hasKickoffStarted } from '../src/lib/matchTime';
 
@@ -143,10 +143,10 @@ function buildPlayers(
     };
   };
 
-  return [
+  return ensurePitchPositions([
     ...starters.map((row: any, index: number) => mapRow(row, true, starterPlacements[index])),
     ...subs.map((row: any) => mapRow(row, false)),
-  ];
+  ], isHome);
 }
 
 function isCancelledGoal(type?: string, detail?: string, comments?: string): boolean {

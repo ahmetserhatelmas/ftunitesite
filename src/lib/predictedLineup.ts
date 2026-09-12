@@ -1,4 +1,5 @@
 import { Player, PlayerStats } from '../types';
+import { layoutStartingXi } from './lineupLayout';
 
 const EMPTY_STATS: PlayerStats = {
   minutesPlayed: 0,
@@ -27,7 +28,7 @@ function cloneForPreview(player: Player, isStarting: boolean, pitchPosition = pl
 }
 
 /** Son resmi 11 − sakat/cezalı; boş koltukları aynı mevkiden yedekle doldur. */
-export function predictSide(lastPlayers: Player[], unavailableIds: Set<string>): Player[] {
+export function predictSide(lastPlayers: Player[], unavailableIds: Set<string>, isHome: boolean): Player[] {
   if (!lastPlayers.length) return [];
 
   const isOut = (player: Player) => unavailableIds.has(player.id);
@@ -44,14 +45,14 @@ export function predictSide(lastPlayers: Player[], unavailableIds: Set<string>):
     const pick = same || any;
     if (!pick) continue;
     used.add(pick.id);
-    promoted.push(cloneForPreview(pick, true, gone.pitchPosition));
+    promoted.push(cloneForPreview(pick, true));
   }
 
-  return [
+  return layoutStartingXi([
     ...kept.map((player) => cloneForPreview(player, true)),
     ...promoted,
     ...bench.filter((player) => !used.has(player.id)).map((player) => cloneForPreview(player, false)),
-  ];
+  ], isHome);
 }
 
 export function formatAbsenceReason(type?: string, reason?: string): string {

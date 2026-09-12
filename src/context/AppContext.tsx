@@ -19,7 +19,7 @@ import {
 import { deleteWebReview, ensureWebProfile, loadWebReviews, saveWebReview } from '../lib/webReviews';
 import { isOwnReview, replaceReviewsFromCloud, stampReviewOwnership } from '../lib/reviews';
 import { fetchRegisteredUserCount } from '../lib/userCount';
-import { deriveActiveWeek, inferredLiveMinute, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, normalizePersonName } from '../lib/matchTime';
+import { deriveActiveWeek, inferredLiveMinute, isLikelyHalfTime, isMatchLive, matchHasStarted, matchNeedsLineupRefresh, normalizePersonName } from '../lib/matchTime';
 import { censorProfanity, sanitizeReply, sanitizeReview } from '../lib/censor';
 import confetti from 'canvas-confetti';
 
@@ -684,6 +684,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (m.status !== 'FT' && isMatchLive(m)) {
             hasLive = true;
             const floor = inferredLiveMinute(m);
+            if (isLikelyHalfTime(m)) {
+              return { ...m, status: 'LIVE' as const, minute: 45, liveSeconds: 0 };
+            }
             const currentMin = typeof m.minute === 'number' ? m.minute : floor;
             const currentSec = typeof m.liveSeconds === 'number' ? m.liveSeconds : 0;
             let nextMin = Math.max(currentMin, floor);
