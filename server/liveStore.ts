@@ -141,6 +141,7 @@ function mergeMatches(incoming: Match[]): void {
       awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
       minute: match.minute ?? previous.minute,
       liveSeconds: match.liveSeconds ?? previous.liveSeconds,
+      period: match.period || previous.period,
     });
   }
   store.matches = sortMatches([...map.values()]);

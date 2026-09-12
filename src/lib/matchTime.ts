@@ -191,20 +191,50 @@ export function isLikelyHalfTime(
   return fromKick > 48 && fromKick < 63;
 }
 
+export function isHalfTime(
+  match?: { period?: '1H' | 'HT' | '2H' | 'ET'; kickoffAt?: string | null; date?: string } | null,
+  now = Date.now(),
+): boolean {
+  if (match?.period === 'HT') return true;
+  if (match?.period === '1H' || match?.period === '2H' || match?.period === 'ET') return false;
+  return isLikelyHalfTime(match, now);
+}
+
+export function formatLiveClock(
+  match?: {
+    status?: string;
+    period?: '1H' | 'HT' | '2H' | 'ET';
+    minute?: number | string;
+    liveSeconds?: number;
+    kickoffAt?: string | null;
+    date?: string;
+  } | null,
+): string {
+  if (isHalfTime(match)) return 'İLK YARI';
+  const liveMin = inferredLiveMinute(match);
+  const liveSec = typeof match?.liveSeconds === 'number' ? match.liveSeconds : 0;
+  return `${liveMin}:${String(liveSec).padStart(2, '0')}`;
+}
+
 /** API dakikası yoksa, 1'de takılıysa veya senkron gecikmişse kickoff'tan canlı dakika. */
 export function inferredLiveMinute(match?: {
   status?: string;
+  period?: '1H' | 'HT' | '2H' | 'ET';
   minute?: number | string;
   kickoffAt?: string | null;
   date?: string;
 } | null, now = Date.now()): number {
+  if (match?.period === 'HT') return 45;
   const fromKick = minutesSinceKickoff(match, now);
-  const estimated = fromKick > 0 ? estimatedMinuteFromKickoff(fromKick) : 0;
+  const secondHalf = match?.period === '2H' || match?.period === 'ET';
+  const estimated = fromKick > 0
+    ? (secondHalf ? Math.min(Math.max(fromKick - 15, 46), 130) : estimatedMinuteFromKickoff(fromKick))
+    : 0;
   const raw = match?.minute;
   const apiMin = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
   const hasApi = Number.isFinite(apiMin) && apiMin > 0;
   if (hasApi && apiMin > 1 && apiMin + 3 >= estimated) {
-    return Math.min(apiMin, 130);
+    return Math.min(secondHalf ? Math.max(apiMin, 46) : apiMin, 130);
   }
   if (estimated > 0) return estimated;
   return hasApi ? Math.min(apiMin, 130) : 1;

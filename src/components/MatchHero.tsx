@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { LayoutGrid, ListFilter, Users, Shield, Award, Flame, MessageSquare, Lock } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
 import { StadiumBackdrop } from './StadiumBackdrop';
-import { hasPredictedLineup, hasPublishedLineup, inferredLiveMinute, isMatchLive } from '../lib/matchTime';
+import { formatLiveClock, hasPredictedLineup, hasPublishedLineup, isHalfTime, isMatchLive } from '../lib/matchTime';
 
 export const MatchHero: React.FC = () => {
   const {
@@ -25,9 +25,8 @@ export const MatchHero: React.FC = () => {
   const isLive = isMatchLive(selectedMatch);
   const officialXi = hasPublishedLineup(selectedMatch);
   const predictedXi = hasPredictedLineup(selectedMatch);
-  const liveMin = inferredLiveMinute(selectedMatch);
-  const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
-  const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
+  const formattedLiveTime = formatLiveClock(selectedMatch);
+  const halfTime = isHalfTime(selectedMatch);
 
   return (
     <div className="w-full space-y-3">
@@ -67,7 +66,7 @@ export const MatchHero: React.FC = () => {
             {isLive && (
               <span className="text-rose-700 font-black bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200 flex items-center gap-1.5 text-[11px] animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping" />
-                <span>Karşılaşma Devam Ediyor</span>
+                <span>{halfTime ? 'İlk yarı' : 'Karşılaşma Devam Ediyor'}</span>
               </span>
             )}
             {writeLock === 'unplayed' && (

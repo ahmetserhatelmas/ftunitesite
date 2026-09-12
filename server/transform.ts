@@ -27,6 +27,12 @@ function mapStatus(short?: string, kickoffIso?: string): Match['status'] {
   return 'UPCOMING';
 }
 
+function mapPeriod(short?: string): Match['period'] | undefined {
+  const code = (short || '').toUpperCase();
+  if (code === '1H' || code === 'HT' || code === '2H' || code === 'ET') return code;
+  return undefined;
+}
+
 function formatMatchDate(iso?: string): string {
   return formatMatchKickoff(iso);
 }
@@ -297,6 +303,7 @@ export function transformFixture(raw: any): Match {
     stadium: venue || 'Süper Lig',
     referee: raw.fixture?.referee || 'Belirlenmedi',
     status,
+    period: mapPeriod(raw.fixture?.status?.short),
     minute: status === 'LIVE' ? (toNumber(raw.fixture?.status?.elapsed) || undefined) : undefined,
     liveSeconds: 0,
     homeTeam,

@@ -8,7 +8,7 @@ import { TeamLogo } from './TeamLogo';
 import { StadiumBackdrop } from './StadiumBackdrop';
 import { FollowButton } from './FollowButton';
 import { CommentatorLevelBadge } from './CommentatorLevelBadge';
-import { inferredLiveMinute, isMatchLive } from '../lib/matchTime';
+import { formatLiveClock, isMatchLive } from '../lib/matchTime';
 
 export const MatchSidePanel: React.FC = () => {
   const {
@@ -62,9 +62,7 @@ export const MatchSidePanel: React.FC = () => {
     : '—';
 
   const isLive = isMatchLive(selectedMatch);
-  const liveMin = inferredLiveMinute(selectedMatch);
-  const liveSec = typeof selectedMatch.liveSeconds === 'number' ? selectedMatch.liveSeconds : 0;
-  const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
+  const formattedLiveTime = formatLiveClock(selectedMatch);
 
   return (
     <div className="space-y-4">

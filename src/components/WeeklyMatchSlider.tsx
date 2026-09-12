@@ -4,7 +4,7 @@ import { Match } from '../types';
 import { MessageSquare, MapPin, Award } from 'lucide-react';
 import { TeamLogo } from './TeamLogo';
 import { StadiumBackdrop } from './StadiumBackdrop';
-import { formatMatchKickoff, hasPredictedLineup, hasPublishedLineup, inferredLiveMinute, isMatchLive } from '../lib/matchTime';
+import { formatLiveClock, formatMatchKickoff, hasPredictedLineup, hasPublishedLineup, isMatchLive } from '../lib/matchTime';
 
 const TR_MONTHS: Record<string, number> = {
   ocak: 0,
@@ -114,9 +114,7 @@ export const WeeklyMatchSlider: React.FC = () => {
           const officialXi = hasPublishedLineup(match);
           const predictedXi = hasPredictedLineup(match);
           const statusLabel = match.status === 'FT' ? 'BİTTİ' : upcomingStatusLabel(match);
-          const liveMin = inferredLiveMinute(match);
-          const liveSec = typeof match.liveSeconds === 'number' ? match.liveSeconds : 0;
-          const formattedLiveTime = `${liveMin}:${String(liveSec).padStart(2, '0')}`;
+          const formattedLiveTime = formatLiveClock(match);
 
           return (
             <button
