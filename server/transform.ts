@@ -304,7 +304,11 @@ export function transformFixture(raw: any): Match {
     referee: raw.fixture?.referee || 'Belirlenmedi',
     status,
     period: mapPeriod(raw.fixture?.status?.short),
+    elapsed: status === 'LIVE' ? (toNumber(raw.fixture?.status?.elapsed) || undefined) : undefined,
     minute: status === 'LIVE' ? (toNumber(raw.fixture?.status?.elapsed) || undefined) : undefined,
+    minuteSyncedAt: status === 'LIVE' && toNumber(raw.fixture?.status?.elapsed)
+      ? new Date().toISOString()
+      : undefined,
     liveSeconds: 0,
     homeTeam,
     awayTeam,

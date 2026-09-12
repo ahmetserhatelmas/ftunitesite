@@ -140,7 +140,13 @@ function mergeMatches(incoming: Match[]): void {
           : (match.unavailablePlayers || previous.unavailablePlayers),
       homeScore: keepPreviousScore ? previous.homeScore : (match.homeScore ?? 0),
       awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
-      minute: match.minute ?? previous.minute,
+      elapsed: match.elapsed ?? previous.elapsed,
+      minute: match.elapsed ?? previous.elapsed ?? match.minute ?? previous.minute,
+      minuteSyncedAt: (() => {
+        if (match.elapsed == null) return previous.minuteSyncedAt;
+        if (match.elapsed === previous.elapsed && previous.minuteSyncedAt) return previous.minuteSyncedAt;
+        return match.minuteSyncedAt || new Date().toISOString();
+      })(),
       liveSeconds: match.liveSeconds ?? previous.liveSeconds,
       period: (() => {
         const next = match.period || previous.period;

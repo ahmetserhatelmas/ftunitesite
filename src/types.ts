@@ -154,6 +154,9 @@ export interface Match {
   status: 'FT' | 'LIVE' | 'UPCOMING';
   /** API-SPORTS short: 1H / HT / 2H. HT = devre arası. */
   period?: '1H' | 'HT' | '2H' | 'ET';
+  /** API-SPORTS elapsed — kickoff tahminiyle ezilmez. */
+  elapsed?: number;
+  minuteSyncedAt?: string;
   minute?: number | string;
   liveSeconds?: number;
   homeTeam: Team;

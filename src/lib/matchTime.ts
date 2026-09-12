@@ -167,6 +167,8 @@ export function matchNeedsAvailabilityRefresh(
 type LiveClockMatch = {
   status?: string;
   period?: '1H' | 'HT' | '2H' | 'ET';
+  elapsed?: number;
+  minuteSyncedAt?: string;
   minute?: number | string;
   liveSeconds?: number;
   kickoffAt?: string | null;
@@ -187,7 +189,8 @@ function minutesSinceKickoff(match?: { kickoffAt?: string | null; date?: string 
   return Math.max(0, Math.floor((now - kickoff) / 60_000));
 }
 
-function parseApiMinute(match?: { minute?: number | string } | null): number | null {
+function parseApiMinute(match?: { elapsed?: number; minute?: number | string } | null): number | null {
+  if (typeof match?.elapsed === 'number' && match.elapsed > 0) return match.elapsed;
   const raw = match?.minute;
   const apiMin = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
   return Number.isFinite(apiMin) && apiMin > 0 ? apiMin : null;
@@ -227,31 +230,33 @@ export function livePlayClock(match?: LiveClockMatch, now = Date.now()): {
 } {
   if (isHalfTime(match, now)) return { minute: 45, seconds: 0, halfTime: true };
 
-  const kickoff = kickoffMs(match);
-  const apiMin = parseApiMinute(match);
-  if (!kickoff) {
-    return { minute: apiMin || 1, seconds: 0, halfTime: false };
+  const official = parseApiMinute(match);
+  const syncedAt = match?.minuteSyncedAt ? Date.parse(match.minuteSyncedAt) : 0;
+  const hasOfficial = official != null && official > 1;
+  const secondHalfStuckAtHt =
+    hasOfficial
+    && official <= 45
+    && (match?.period === '2H' || match?.period === 'ET' || minutesSinceKickoff(match, now) >= 63);
+
+  if (hasOfficial && !secondHalfStuckAtHt) {
+    const origin = syncedAt && !Number.isNaN(syncedAt) ? syncedAt : now;
+    const driftSec = Math.max(0, Math.floor((now - origin) / 1000));
+    return {
+      minute: Math.min(official, 130),
+      seconds: Math.min(driftSec, 59),
+      halfTime: false,
+    };
   }
 
-  const elapsedMs = Math.max(0, now - kickoff);
-  const fromKick = Math.floor(elapsedMs / 60_000);
-  const inSecondHalf =
-    match?.period === '2H'
-    || match?.period === 'ET'
-    || fromKick >= 63
-    || (apiMin != null && apiMin > 45);
-
-  const playMs = inSecondHalf ? Math.max(0, elapsedMs - 15 * 60_000) : elapsedMs;
-  let minute = Math.floor(playMs / 60_000);
-  const seconds = Math.floor((playMs % 60_000) / 1000);
-  minute = inSecondHalf
-    ? Math.min(Math.max(minute, 46), 130)
-    : Math.min(Math.max(minute, 1), 48);
-
-  if (apiMin != null && apiMin > minute) {
-    return { minute: Math.min(apiMin, 130), seconds, halfTime: false };
+  const fromKick = minutesSinceKickoff(match, now);
+  if (fromKick > 0) {
+    return {
+      minute: estimatedMinuteFromKickoff(fromKick),
+      seconds: 0,
+      halfTime: false,
+    };
   }
-  return { minute, seconds, halfTime: false };
+  return { minute: official || 1, seconds: 0, halfTime: false };
 }
 
 export function applyLiveClock<T extends LiveClockMatch>(match: T, now = Date.now()): T {
@@ -261,7 +266,6 @@ export function applyLiveClock<T extends LiveClockMatch>(match: T, now = Date.no
     ...match,
     status: 'LIVE',
     period: clock.halfTime ? 'HT' : match.period === 'HT' ? '2H' : match.period,
-    minute: clock.minute,
     liveSeconds: clock.seconds,
   };
 }
