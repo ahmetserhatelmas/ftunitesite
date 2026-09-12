@@ -73,10 +73,49 @@ export function matchHasStarted(match?: { status?: string; kickoffAt?: string | 
   return hasKickoffStarted(match.kickoffAt) || hasKickoffStarted(match.date);
 }
 
-export function isMatchLive(match?: { status?: string; kickoffAt?: string | null; date?: string } | null): boolean {
+export function isLikelyFullTime(
+  match?: {
+    status?: string;
+    period?: '1H' | 'HT' | '2H' | 'ET';
+    elapsed?: number;
+    minute?: number | string;
+    minuteSyncedAt?: string;
+    kickoffAt?: string | null;
+    date?: string;
+  } | null,
+  now = Date.now(),
+): boolean {
   if (!match) return false;
+  if (match.status === 'FT') return true;
+  if (match.period === 'ET') return false;
+  if (match.status === 'UPCOMING' && !hasKickoffStarted(match.kickoffAt) && !hasKickoffStarted(match.date)) {
+    return false;
+  }
+
+  const official = parseApiMinute(match);
+  const syncedAt = match.minuteSyncedAt ? Date.parse(match.minuteSyncedAt) : 0;
+  const staleMs = syncedAt && !Number.isNaN(syncedAt) ? now - syncedAt : 0;
+  const fromKick = minutesSinceKickoff(match, now);
+
+  if (official != null && official >= 90 && staleMs > 2 * 60_000) return true;
+  if (fromKick >= 115 && (official == null || official >= 80)) return true;
+  return false;
+}
+
+export function isMatchLive(
+  match?: {
+    status?: string;
+    period?: '1H' | 'HT' | '2H' | 'ET';
+    elapsed?: number;
+    minute?: number | string;
+    minuteSyncedAt?: string;
+    kickoffAt?: string | null;
+    date?: string;
+  } | null,
+  now = Date.now(),
+): boolean {
+  if (!match || match.status === 'FT' || isLikelyFullTime(match, now)) return false;
   if (match.status === 'LIVE') return true;
-  if (match.status === 'FT') return false;
   return hasKickoffStarted(match.kickoffAt) || hasKickoffStarted(match.date);
 }
 
@@ -260,7 +299,11 @@ export function livePlayClock(match?: LiveClockMatch, now = Date.now()): {
 }
 
 export function applyLiveClock<T extends LiveClockMatch>(match: T, now = Date.now()): T {
-  if (!match || match.status === 'FT' || !isMatchLive(match)) return match;
+  if (!match || match.status === 'FT') return match;
+  if (isLikelyFullTime(match, now)) {
+    return { ...match, status: 'FT' };
+  }
+  if (!isMatchLive(match, now)) return match;
   const clock = livePlayClock(match, now);
   return {
     ...match,

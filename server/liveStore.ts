@@ -31,6 +31,7 @@ import {
   hasKickoffStarted,
   applyLiveClock,
   isHalfTime,
+  isLikelyFullTime,
   isMatchLive,
   matchNeedsAvailabilityRefresh,
   matchNeedsLineupRefresh,
@@ -118,7 +119,8 @@ function mergeMatches(incoming: Match[]): void {
     const kickoffAt = match.kickoffAt || previous.kickoffAt;
     const richerStatus = statusRank(previous.status) >= statusRank(match.status) ? previous.status : match.status;
     const status =
-      richerStatus === 'FT'
+      match.status === 'FT' || previous.status === 'FT' || richerStatus === 'FT'
+        || isLikelyFullTime({ ...previous, ...match, kickoffAt })
         ? 'FT'
         : hasKickoffStarted(kickoffAt) || hasKickoffStarted(body.date)
           ? 'LIVE'
