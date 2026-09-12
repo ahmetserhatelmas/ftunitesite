@@ -138,8 +138,12 @@ function mergeMatches(incoming: Match[]): void {
         match.lineupConfirmed || incomingXi.any
           ? undefined
           : (match.unavailablePlayers || previous.unavailablePlayers),
-      homeScore: keepPreviousScore ? previous.homeScore : (match.homeScore ?? 0),
-      awayScore: keepPreviousScore ? previous.awayScore : (match.awayScore ?? 0),
+      homeScore: keepPreviousScore
+        ? previous.homeScore
+        : (typeof match.homeScore === 'number' ? match.homeScore : previous.homeScore ?? 0),
+      awayScore: keepPreviousScore
+        ? previous.awayScore
+        : (typeof match.awayScore === 'number' ? match.awayScore : previous.awayScore ?? 0),
       elapsed: match.elapsed ?? previous.elapsed,
       minute: match.elapsed ?? previous.elapsed ?? match.minute ?? previous.minute,
       minuteSyncedAt: (() => {
@@ -273,13 +277,34 @@ export async function hydrateWeek(week: number): Promise<void> {
   saveLocalSnapshot();
 }
 
+function mergeFixtureRaws(base: any[], extra: any[]): any[] {
+  const byId = new Map<number, any>();
+  for (const row of base) {
+    const id = Number(row?.fixture?.id);
+    if (id) byId.set(id, row);
+  }
+  for (const row of extra) {
+    const id = Number(row?.fixture?.id);
+    if (id) byId.set(id, row);
+  }
+  return [...byId.values()];
+}
+
 async function refreshLiveScores(): Promise<void> {
   if (isApiSportsQuotaBlocked()) return;
   const due = store.matches.filter((match) => matchNeedsScoreRefresh(match));
   if (!due.length) return;
 
+  const liveIds = due
+    .filter((match) => match.status === 'LIVE' || isMatchLive(match))
+    .map((match) => fixtureApiId(match.id))
+    .filter((id): id is number => Boolean(id));
+
   let raws = await fetchLiveLeagueFixtures(store.season);
-  if (!raws.length && !isApiSportsQuotaBlocked()) {
+  if (liveIds.length && !isApiSportsQuotaBlocked()) {
+    const detailed = await fetchFixturesDetailed(liveIds);
+    if (detailed.length) raws = mergeFixtureRaws(raws, detailed);
+  } else if (!raws.length && !isApiSportsQuotaBlocked()) {
     const ids = due
       .map((match) => fixtureApiId(match.id))
       .filter((id): id is number => Boolean(id));
@@ -547,10 +572,10 @@ export function ensureBootstrapped(): Promise<void> {
   return bootstrapPromise;
 }
 
-function weeksNeedingRefresh(): number[] {
+function weeksNeedingLineupRefresh(): number[] {
   return [...new Set(
     store.matches
-      .filter((match) => matchNeedsScoreRefresh(match) || matchNeedsLineupRefresh(match))
+      .filter((match) => matchNeedsLineupRefresh(match))
       .map((match) => match.week)
       .filter((week) => week > 0),
   )];
@@ -572,7 +597,7 @@ function startLivePoller(): void {
       const now = Date.now();
       if (now - lastLineupAt < 3 * 60 * 1000) return;
       lastLineupAt = now;
-      for (const week of weeksNeedingRefresh()) {
+      for (const week of weeksNeedingLineupRefresh()) {
         await hydrateWeek(week).catch((error) => {
           console.warn('Canlı hafta senkronu başarısız:', error);
         });
