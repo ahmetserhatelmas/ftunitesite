@@ -31,7 +31,6 @@ import {
   hasKickoffStarted,
   applyLiveClock,
   isHalfTime,
-  isLikelyFullTime,
   isMatchLive,
   matchNeedsAvailabilityRefresh,
   matchNeedsLineupRefresh,
@@ -74,12 +73,6 @@ function sortMatches(matches: Match[]): Match[] {
   });
 }
 
-function statusRank(status: Match['status']): number {
-  if (status === 'FT') return 2;
-  if (status === 'LIVE') return 1;
-  return 0;
-}
-
 function pickOfficialPlayers(
   incoming: Match['homePlayers'],
   previous: Match['homePlayers'],
@@ -117,14 +110,16 @@ function mergeMatches(incoming: Match[]): void {
       events: useIncomingEvents ? match.events : (previous.events.length ? previous.events : match.events),
     };
     const kickoffAt = match.kickoffAt || previous.kickoffAt;
-    const richerStatus = statusRank(previous.status) >= statusRank(match.status) ? previous.status : match.status;
     const status =
-      match.status === 'FT' || previous.status === 'FT' || richerStatus === 'FT'
-        || isLikelyFullTime({ ...previous, ...match, kickoffAt })
+      match.status === 'FT'
         ? 'FT'
-        : hasKickoffStarted(kickoffAt) || hasKickoffStarted(body.date)
+        : match.status === 'LIVE'
           ? 'LIVE'
-          : richerStatus;
+          : previous.status === 'FT'
+            ? 'FT'
+            : hasKickoffStarted(kickoffAt) || hasKickoffStarted(body.date)
+              ? 'LIVE'
+              : match.status || previous.status;
     map.set(match.id, {
       ...body,
       kickoffAt,
@@ -317,6 +312,24 @@ async function refreshLiveScores(): Promise<void> {
   mergeMatches(raws.map(transformFixture));
   store.lastSync = new Date().toISOString();
   store.source = 'API-SPORTS Football v3 • Trendyol Süper Lig';
+  saveLocalSnapshot();
+}
+
+const STANDINGS_REFRESH_MS = 15 * 60 * 1000;
+let lastStandingsAt = 0;
+
+async function refreshStandingsIfDue(): Promise<void> {
+  if (isApiSportsQuotaBlocked()) return;
+  const tableDue = store.matches.some((match) => match.status === 'FT' && matchNeedsScoreRefresh(match));
+  if (!tableDue) return;
+  if (lastStandingsAt && Date.now() - lastStandingsAt < STANDINGS_REFRESH_MS) return;
+
+  const rows = await fetchStandings(store.season);
+  const next = transformStandings(rows);
+  if (!next.length) return;
+  store.standings = next;
+  lastStandingsAt = Date.now();
+  store.lastSync = new Date().toISOString();
   saveLocalSnapshot();
 }
 
@@ -595,6 +608,7 @@ function startLivePoller(): void {
     inFlight = true;
     try {
       await refreshLiveScores();
+      await refreshStandingsIfDue();
       await refreshInjuriesIfDue();
       const now = Date.now();
       if (now - lastLineupAt < 3 * 60 * 1000) return;
